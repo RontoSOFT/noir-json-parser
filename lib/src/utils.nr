@@ -1,5 +1,4 @@
 use crate::globals;
-use crate::converters;
 
 fn transformASCIIDigit(mut byteValue : Field) -> Field
 {
@@ -9,9 +8,8 @@ fn transformASCIIDigit(mut byteValue : Field) -> Field
     byteValue
 }
 
-fn validateASCIDigit(byteValue : Field) -> bool
+fn validateDigit(byteValue : u8) -> bool
 {
-    // TODO: Should work as u4??
     // see crash example 1
-    ((byteValue as u32) <= (globals::DIGIT_NULL as u32))
+    (byteValue <= (globals::DIGIT_NULL as u8))
 }

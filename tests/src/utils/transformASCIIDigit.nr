@@ -1,5 +1,5 @@
-use dep::noir_json_parser::globals;
-use dep::noir_json_parser::utils;
+use dep::noir::globals;
+use dep::noir::utils;
 
 #[test]
 fn ValidInputs_ReturnsExpectedValue()
