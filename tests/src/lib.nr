@@ -1,6 +1,6 @@
 mod findProperty;
+mod getValueBytes;
+mod getValueU32;
 mod transformASCIIDigit;
 mod validateASCIIDigit;
-mod getValueBytes;
-
-mod U32;
+mod toU32;

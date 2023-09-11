@@ -1,6 +1,4 @@
 mod converters;
-mod parsers;
+mod parsing;
 mod globals;
 mod utils;
-
-mod tests;

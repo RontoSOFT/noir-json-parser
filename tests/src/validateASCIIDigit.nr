@@ -1,5 +1,5 @@
-use crate::utils;
-use crate::globals;
+use dep::noir_json_parser::globals;
+use dep::noir_json_parser::utils;
 
 #[test]
 fn ValidInputs_ReturnsExpectedValue()
@@ -16,7 +16,7 @@ fn ValidInputs_ReturnsExpectedValue()
     assert( utils::validateASCIDigit(7) );
     assert( utils::validateASCIDigit(8) );
     assert( utils::validateASCIDigit(9) );
-    assert( utils::validateASCIDigit(globals::DIGIT_NULL as u8) );
+    assert( utils::validateASCIDigit(globals::DIGIT_NULL) );
 
     assert( !utils::validateASCIDigit(11) );
 }

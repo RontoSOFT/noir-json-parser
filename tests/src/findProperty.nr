@@ -1,4 +1,5 @@
-use crate::utils;
+use dep::noir_json_parser::globals;
+use dep::noir_json_parser::parsing;
 
 #[test]
 fn ValidInputs_ReturnsExpectedValue()
@@ -8,9 +9,9 @@ fn ValidInputs_ReturnsExpectedValue()
 
     let prop_names = ("age", "isEmployed", "id");
 
-    assert( utils::findProperty(json_bytes, prop_names.0.as_bytes()) ==  2 );
-    assert( utils::findProperty(json_bytes, prop_names.1.as_bytes()) == 10 );
-    assert( utils::findProperty(json_bytes, prop_names.2.as_bytes()) == 27 );
+    assert( parsing::findProperty(json_bytes, prop_names.0.as_bytes()) ==  2 );
+    assert( parsing::findProperty(json_bytes, prop_names.1.as_bytes()) == 10 );
+    assert( parsing::findProperty(json_bytes, prop_names.2.as_bytes()) == 27 );
 }
 
 #[test]
@@ -19,7 +20,7 @@ fn PropertyIsEmpty_ReturnsMinus1()
     let json = "{ age: 30 }";
     let prop_name = "";
 
-    assert( utils::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
 }
 
 #[test]
@@ -40,7 +41,7 @@ fn PropertyIsMalformed_ReturnsMinus1()
 
     for name in prop_names
     {
-        assert( utils::findProperty(json_bytes, name.as_bytes()) == -1 );
+        assert( parsing::findProperty(json_bytes, name.as_bytes()) == -1 );
     }
 }
 
@@ -58,7 +59,7 @@ fn JSONPropertyIsEmpty_ReturnsMinus1()
 
     for json in jsons
     {
-        assert( utils::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
+        assert( parsing::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
     }
 }
 
@@ -76,6 +77,6 @@ fn JSONPropertyIsMissing_ReturnsMinus1()
 
     for json in jsons
     {
-        assert( utils::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
+        assert( parsing::findProperty(json.as_bytes(), prop_name.as_bytes()) == -1 );
     }
 }

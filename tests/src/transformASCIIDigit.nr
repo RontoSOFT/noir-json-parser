@@ -1,5 +1,5 @@
-use crate::utils;
-use crate::globals;
+use dep::noir_json_parser::globals;
+use dep::noir_json_parser::utils;
 
 #[test]
 fn ValidInputs_ReturnsExpectedValue()

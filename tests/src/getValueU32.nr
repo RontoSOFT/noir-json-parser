@@ -1,4 +1,4 @@
-use crate::parsers;
+use dep::noir_json_parser::parsing;
 
 #[test]
 fn ValidInputs_ReturnsExpectedValue()
@@ -6,7 +6,7 @@ fn ValidInputs_ReturnsExpectedValue()
     let json = "{'name':'John Doe','age':30,'isEmployed':true}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(res.valid & (res.value == 30));
 }
@@ -17,7 +17,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
     let json = "{'name':'John Doe','age':'30','isEmployed':true}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(res.valid & (res.value == 30));
 }
@@ -28,7 +28,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
 //     let json = "{'name':'John Doe','age':\"30\",'isEmployed':true}";
 //     let prop_name = "age";
 
-//     let res = parsers::U32::getValue(json, prop_name);
+//     let res = parsing::getValueU32(json, prop_name);
 
 //     assert(res.valid);
 //     assert(res.value == 30);
@@ -40,7 +40,7 @@ fn JSONIsEmpty_ReturnsInvalidValue()
     let json = "{}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -51,7 +51,7 @@ fn PropertyIsEmpty_ReturnsInvalidValue()
     let json = "{ age: 30 }";
     let prop_name = "";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -62,7 +62,7 @@ fn JSONIsMissingProperty_ReturnsInvalidValue()
     let json = "{'name':'John Doe','isEmployed':true,id:'0x3f'}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -73,7 +73,7 @@ fn JSONPropertyValueHasMinusSign_ReturnsInvalidValue()
     let json = "{'name':'John Doe','age':-30,'isEmployed':true}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -83,7 +83,7 @@ fn JSONPropertyValueTypeIsFloat_ReturnsInvalidValue()
     let json = "{'name':'John Doe','age':30.0,'isEmployed':true}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -94,7 +94,7 @@ fn JSONPropertyValueTypeIsString_ReturnsInvalidValue()
     let json = "{'name':'John Doe','age':'thirty','isEmployed':true}";
     let prop_name = "age";
 
-    let res = parsers::U32::getValue(json, prop_name);
+    let res = parsing::getValueU32(json, prop_name);
 
     assert(!res.valid & (res.value == 0));
 }
@@ -112,7 +112,7 @@ fn JSONPropertyValueIsMalformed_ReturnsInvalidValue()
 
     for json in jsons
     {
-        let res = parsers::U32::getValue(json, prop_name);
+        let res = parsing::getValueU32(json, prop_name);
 
         assert(!res.valid & (res.value == 0));
     }
@@ -132,7 +132,7 @@ fn JSONIsMalformedButPropertyValueIsParsable_ReturnsValidValue()
 
     for json in jsons
     {
-        let res = parsers::U32::getValue(json, prop_name);
+        let res = parsing::getValueU32(json, prop_name);
 
         assert(res.valid & (res.value == 3));
     }
