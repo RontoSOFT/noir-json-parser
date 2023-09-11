@@ -15,6 +15,35 @@ fn ValidInputs_ReturnsExpectedValue()
 }
 
 #[test]
+fn PropertyOverlapsJSONProperty_ReturnsInvalidValue()
+{
+    let jsons =
+    (
+        "{'ageRestriction':30}",
+        "{' ageRestriction':30}",
+        "{'age Restriction':30}",
+        "{' age Restriction':30}",
+        "{ageRestriction:30}",
+        "{ ageRestriction:30}",
+        "{ageRestriction :30}",
+        "{ ageRestriction :30}",
+        "{ age Restriction:30}",
+    );
+
+    let prop_name = "age";
+
+    assert( parsing::findProperty(jsons.0.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.1.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.2.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.3.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.4.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.5.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.6.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.7.as_bytes(), prop_name.as_bytes()) == -1 );
+    assert( parsing::findProperty(jsons.8.as_bytes(), prop_name.as_bytes()) == -1 );
+}
+
+#[test]
 fn PropertyIsEmpty_ReturnsMinus1()
 {
     let json = "{ age: 30 }";
@@ -34,6 +63,8 @@ fn PropertyIsMalformed_ReturnsMinus1()
         "a'ge",
         // "a\"ge",
         "a;ge",
+        "ag,e",
+        "ag:e",
         "ag}e",
         "ag{e",
         "ag e",

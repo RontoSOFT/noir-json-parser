@@ -19,7 +19,7 @@ struct PropertyValue<T>
 //
 // @returns A Field value indicating the starting index where the value is found
 //
-fn findProperty<JSON_SIZE, PROP_NAME_SIZE>(jsonBytes : [u8; JSON_SIZE], propNameBytes : [u8; PROP_NAME_SIZE]) -> Field
+/*unconstrained*/ fn findProperty<JSON_SIZE, PROP_NAME_SIZE>(jsonBytes : [u8; JSON_SIZE], propNameBytes : [u8; PROP_NAME_SIZE]) -> Field
 {
     let mut index : Field = -1;
 
@@ -34,7 +34,88 @@ fn findProperty<JSON_SIZE, PROP_NAME_SIZE>(jsonBytes : [u8; JSON_SIZE], propName
                 is_property_found &= (jsonBytes[j + i] == propNameBytes[j]);
             }
 
-            if (is_property_found) { index = i; }
+            if (is_property_found)
+            {
+                let mut j = 0;
+                let mut is_left_OK = true;
+                let mut is_right_OK = true;
+
+                let mut is_colon_found = false;
+                let mut is_single_quoted = false;
+                let mut is_double_quoted = false;
+
+                j = i - 1;
+
+                if (i != 0)
+                {
+                    is_left_OK  = (jsonBytes[j] == globals::COMMA);
+                    is_left_OK |= (jsonBytes[j] == globals::SPACE);
+                    is_left_OK |= (jsonBytes[j] == globals::LEFT_BRACE);
+                    is_left_OK |= (jsonBytes[j] == globals::RIGHT_BRACE);
+                    is_left_OK |= (jsonBytes[j] == globals::SINGLE_QUOTE);
+                    is_left_OK |= (jsonBytes[j] == globals::DOUBLE_QUOTE);
+
+                    // if ((jsonBytes[j] == globals::SPACE))
+                    // {
+                    //     for k in 0..j
+                    //     {
+                    //         if (is_left_OK)
+                    //         {
+                    //             if (!is_colon_found)   { is_colon_found  = (jsonBytes[k] == globals::COLON); }
+
+                    //             if (!is_single_quoted)
+                    //             {
+                    //                 if (is_colon_found) { is_left_OK = false; }
+                    //                 else                { is_single_quoted = (jsonBytes[k] == globals::SINGLE_QUOTE); }
+                    //             }
+
+                    //             if (!is_double_quoted)
+                    //             {
+                    //                 if (is_colon_found) { is_left_OK = false; }
+                    //                 else                { is_double_quoted = (jsonBytes[k] == globals::DOUBLE_QUOTE); }
+                    //             }
+                    //         }
+                    //     }
+                    // }
+                }
+
+                j += PROP_NAME_SIZE + 1;
+
+                if ((j - JSON_SIZE) != 1)
+                {
+                    is_right_OK  = (jsonBytes[j] == globals::COLON);
+                    is_right_OK |= (jsonBytes[j] == globals::SPACE);
+                    is_right_OK |= (jsonBytes[j] == globals::LEFT_BRACE);
+                    is_right_OK |= (jsonBytes[j] == globals::RIGHT_BRACE);
+                    is_right_OK |= (jsonBytes[j] == globals::SINGLE_QUOTE);
+                    is_right_OK |= (jsonBytes[j] == globals::DOUBLE_QUOTE);
+
+                    if ((jsonBytes[j] == globals::SPACE))
+                    {
+                        for k in j..JSON_SIZE
+                        {
+                            if (is_right_OK)
+                            {
+                                if (!is_colon_found)   { is_colon_found  = (jsonBytes[k] == globals::COLON); }
+
+                                if (!is_single_quoted)
+                                {
+                                    if (is_colon_found) { is_right_OK = false; }
+                                    else                { is_single_quoted = (jsonBytes[k] == globals::SINGLE_QUOTE); }
+                                }
+
+                                if (!is_double_quoted)
+                                {
+                                    if (is_colon_found) { is_right_OK = false; }
+                                    else                { is_double_quoted = (jsonBytes[k] == globals::DOUBLE_QUOTE); }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (is_left_OK & is_right_OK) { index = i; }
+            }
         }
     }
 
@@ -46,16 +127,12 @@ fn findProperty<JSON_SIZE, PROP_NAME_SIZE>(jsonBytes : [u8; JSON_SIZE], propName
 //
 // @returns A ValueBytes<N> instance representing the ASCII byte array and its validity
 //
-unconstrained fn getValueBytes<JSON_SIZE, PROP_NAME_SIZE, BYTES_SIZE>(aJSONString : str<JSON_SIZE>, aPropName : str<PROP_NAME_SIZE>) -> ValueBytes<BYTES_SIZE>
+/* unconstrained */ fn getValueBytes<JSON_SIZE, PROP_NAME_SIZE, BYTES_SIZE>(aJSONString : str<JSON_SIZE>, aPropName : str<PROP_NAME_SIZE>) -> ValueBytes<BYTES_SIZE>
 {
     let json_bytes = aJSONString.as_bytes();
     let prop_name_bytes = aPropName.as_bytes();
 
-    // dep::std::println("");
-    // dep::std::println(json_bytes);
-    // dep::std::println("");
-
-    // TODO: Unconstrained functions cannot call other functions
+    // TODO: Unconstrained functions cannot call *any other functions*
     // https://github.com/AztecProtocol/aztec-packages/blob/master/yarn-project/acir-simulator/README.md
     let index = findProperty(json_bytes, prop_name_bytes);
 
@@ -70,10 +147,13 @@ unconstrained fn getValueBytes<JSON_SIZE, PROP_NAME_SIZE, BYTES_SIZE>(aJSONStrin
     let mut is_colon_found = false;
     let mut is_single_quoted = false;
     let mut is_double_quoted = false;
+    let mut can_start = false;
 
-    for i in (index + PROP_NAME_SIZE)..JSON_SIZE
+    for i in 0..JSON_SIZE
     {
-        if (!is_value_parsed)
+        if (!can_start) { can_start = (i == (index + PROP_NAME_SIZE)); }
+
+        if (!is_value_parsed & can_start)
         {
             if (!is_colon_found)
             {
@@ -93,13 +173,6 @@ unconstrained fn getValueBytes<JSON_SIZE, PROP_NAME_SIZE, BYTES_SIZE>(aJSONStrin
 
             is_value_malformed = (is_value_found & is_skipped & !is_single_quoted & !is_double_quoted);
             is_value_parsed = is_value_malformed;
-
-            // dep::std::println("...");
-            // dep::std::println(json_bytes[i]);
-            // dep::std::println(is_skipped);
-            // dep::std::println(is_colon_found);
-            // dep::std::println(is_single_quoted);
-            // dep::std::println(is_value_malformed);
 
             if (!is_skipped)
             {

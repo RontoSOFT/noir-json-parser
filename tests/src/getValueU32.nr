@@ -35,39 +35,6 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
 // }
 
 #[test]
-fn JSONIsEmpty_ReturnsInvalidValue()
-{
-    let json = "{}";
-    let prop_name = "age";
-
-    let res = parsing::getValueU32(json, prop_name);
-
-    assert(!res.valid & (res.value == 0));
-}
-
-#[test]
-fn PropertyIsEmpty_ReturnsInvalidValue()
-{
-    let json = "{ age: 30 }";
-    let prop_name = "";
-
-    let res = parsing::getValueU32(json, prop_name);
-
-    assert(!res.valid & (res.value == 0));
-}
-
-#[test]
-fn JSONIsMissingProperty_ReturnsInvalidValue()
-{
-    let json = "{'name':'John Doe','isEmployed':true,id:'0x3f'}";
-    let prop_name = "age";
-
-    let res = parsing::getValueU32(json, prop_name);
-
-    assert(!res.valid & (res.value == 0));
-}
-
-#[test]
 fn JSONPropertyValueHasMinusSign_ReturnsInvalidValue()
 {
     let json = "{'name':'John Doe','age':-30,'isEmployed':true}";

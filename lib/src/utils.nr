@@ -13,5 +13,5 @@ fn validateASCIDigit(byteValue : Field) -> bool
 {
     // TODO: Should work as u4??
     // see crash example 1
-    ((byteValue as u32) <= (globals::DIGIT_NULL_))
+    ((byteValue as u32) <= (globals::DIGIT_NULL as u32))
 }
