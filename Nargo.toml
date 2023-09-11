@@ -1,6 +1,6 @@
 [package]
-name = "json_parser"
-type = "bin"
+name = "noir_json_parser"
+type = "lib"
 authors = [""]
 compiler_version = "0.10.3"
 
