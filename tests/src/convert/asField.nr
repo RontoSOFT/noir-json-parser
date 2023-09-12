@@ -1,0 +1,160 @@
+use dep::noir::globals;
+use dep::noir::convert;
+use dep::noir::convert::BytesU8;
+use dep::noir::parse::JSON;
+
+#[test]
+fn ValidInputStringBytes_ReturnsExpectedValue()
+{
+    let bytes = convert::StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, 0x36, 0x37, 0x35, 0x31, 0x30]);
+    let result = bytes.asField();
+
+    assert( result.valid & (result.value == 4293867510) );
+}
+
+#[test]
+fn ValidInputStringBytesWithNulls_ReturnsExpectedValue()
+{
+    let bytes = convert::StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL]);
+    let result = bytes.asField();
+
+    assert( result.valid & (result.value == 42938) );
+}
+
+#[test]
+fn ValidInputStringBytesLargerThanMaxOfFieldType_ReturnsOverflowedValue()
+{
+    let bytes = convert::StringBytes::new_valid([0x32,0x31,0x38,0x38,0x38,0x32,0x34,0x32,0x38,0x37,0x31,0x38,0x33,0x39,0x32,0x37,0x35,0x32,0x32,0x32,0x32,0x34,0x36,0x34,0x30,0x35,0x37,0x34,0x35,0x32,0x35,0x37,0x32,0x37,0x35,0x30,0x38,0x38,0x35,0x34,0x38,0x33,0x36,0x34,0x34,0x30,0x30,0x34,0x31,0x36,0x30,0x33,0x34,0x33,0x34,0x33,0x36,0x39,0x38,0x32,0x30,0x34,0x31,0x38,0x36,0x35,0x37,0x35,0x38,0x30,0x38,0x34,0x39,0x35,0x36,0x31,0x37]);
+    let result = bytes.asField();
+
+    assert( result.valid & (result.value as u32 == 0) );
+}
+
+#[test]
+fn StringBytesContainNullBetweenNonNullElements_ReturnsInvalidValue()
+{
+    let bytes = convert::StringBytes::new_valid([0x34, 0x32, globals::BYTE_NULL, 0x34, 0x39, 0x36, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL]);
+    let result = bytes.asField();
+
+    assert( !result.valid & (result.value == 0) );
+}
+
+#[test]
+fn ValidInputsJSON_ReturnsExpectedValue()
+{
+    let json = JSON::new("{'name':'John Doe','age':30,'isEmployed':true}");
+    let prop = "age";
+
+    let bytes : BytesU8 = json.bytesOf(prop);
+    let result = bytes.asField();
+
+    assert( result.valid & (result.value == 30) );
+}
+
+#[test]
+fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
+{
+    let json = JSON::new("{'name':'John Doe','age':'30','isEmployed':true}");
+    let prop = "age";
+
+    let bytes : BytesU8 = json.bytesOf(prop);
+    let result = bytes.asField();
+// dep::std::println(result);
+    assert( result.valid & (result.value == 30) );
+}
+
+//
+// TODO: see https://github.com/noir-lang/noir/issues/2657
+//
+// #[test]
+// fn JSONPropertyValueIsDoubleQuoted_ReturnsValidValue()
+// {
+//     let json = JSON::new("{'name':'John Doe','age':\"30\",'isEmployed':true}");
+//     let prop = "age";
+
+//     let bytes : BytesU8 = json.bytesOf(prop);
+//     let result = bytes.asField();
+
+//     assert(result.valid);
+//     assert(result.value == 30);
+// }
+
+#[test]
+fn JSONPropertyValueTypeIsSigned_ReturnsInvalidValue()
+{
+    let json = JSON::new("{'name':'John Doe','age':-30,'isEmployed':true}");
+    let prop = "age";
+
+    let bytes : BytesU8 = json.bytesOf(prop);
+    let result = bytes.asField();
+
+    assert( !result.valid & (result.value == 0) );
+}
+
+#[test]
+fn JSONPropertyValueTypeIsFloat_ReturnsInvalidValue()
+{
+    let json = JSON::new("{'name':'John Doe','age':30.0,'isEmployed':true}");
+    let prop = "age";
+
+    let bytes : BytesU8 = json.bytesOf(prop);
+    let result = bytes.asField();
+
+    assert( !result.valid & (result.value == 0) );
+}
+
+#[test]
+fn JSONPropertyValueTypeIsString_ReturnsInvalidValue()
+{
+    let json = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}");
+    let prop = "age";
+
+    let bytes : BytesU8 = json.bytesOf(prop);
+    let result = bytes.asField();
+
+    assert( !result.valid & (result.value == 0) );
+}
+
+#[test]
+fn JSONPropertyValueIsMalformed_ReturnsInvalidValue()
+{
+    let prop = "age";
+    let jsons =
+    [
+        JSON::new("{'name':'John Doe','age':3:0,'isEmployed':true}"),
+        JSON::new("{'name':'John Doe','age':3 0,'isEmployed':true}"),
+        JSON::new("{'name':'John Doe','age':3{0,'isEmployed':true}"),
+    ];
+
+    for json in jsons
+    {
+        let bytes : BytesU8 = json.bytesOf(prop);
+        let result = bytes.asField();
+
+        assert( !result.valid & (result.value == 0) );
+    }
+}
+
+#[test]
+fn JSONIsMalformedButPropertyValueIsParsable_ReturnsValidValue()
+{
+    let prop = "age";
+    let jsons =
+    [
+        JSON::new("{'name':'John Doe','age':3'0,'isEmployed':true}"),
+        //
+        // TODO: see https://github.com/noir-lang/noir/issues/2657
+        //
+        // JSON::new("{'name':'John Doe','age':3\"0,'isEmployed':true}"),
+        JSON::new("{'name':'John Doe','age':3,0,'isEmployed':true}"),
+        JSON::new("{'name':'John Doe','age':3}0,'isEmployed':true}"),
+    ];
+
+    for json in jsons
+    {
+        let bytes : BytesU8 = json.bytesOf(prop);
+        let result = bytes.asField();
+
+        assert( result.valid & (result.value == 3) );
+    }
+}

@@ -1,5 +1,4 @@
 use crate::globals;
-use crate::utils;
 use crate::convert;
 
 struct JSON<N>
@@ -19,7 +18,7 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
 //
 // @returns A Field value indicating the starting index where the value is found
 //
-/*unconstrained*/ fn indexOf<SIZE_PROP_NAME>(self : JSON<SIZE_JSON>, aPropName : str<SIZE_PROP_NAME>) -> Field
+fn indexOf<SIZE_PROP_NAME>(self, aPropName : str<SIZE_PROP_NAME>) -> Field
 {
     let prop_name_bytes = aPropName.as_bytes();
     let mut index : Field = -1;
@@ -133,30 +132,30 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
 //
 // @returns A StringBytes<N> instance representing the ASCII byte array and its validity
 //
-/* unconstrained */ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self : JSON<SIZE_JSON>, aPropName : str<SIZE_PROP_NAME>) -> convert::StringBytes<SIZE_BYTE_ARRAY>
+fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, aPropName : str<SIZE_PROP_NAME>) -> convert::StringBytes<SIZE_BYTE_ARRAY>
 {
     // TODO: Unconstrained functions cannot call *any other functions*
     // https://github.com/AztecProtocol/aztec-packages/blob/master/yarn-project/acir-simulator/README.md
     let index = self.indexOf(aPropName);
 
-    let mut value_bytes : [Field; SIZE_BYTE_ARRAY] = [-1; SIZE_BYTE_ARRAY];
+    let mut value_bytes : [Field; SIZE_BYTE_ARRAY] = [globals::BYTE_NULL; SIZE_BYTE_ARRAY];
     let mut value_bytes_index : Field = 0;
 
-    let mut is_value_parsed = false;
+    let mut can_start = false;
+    let mut can_array_fit_value = true;
+    let mut is_done = false;
     let mut is_value_found = false;
-    let mut is_value_malformed = false;
+    let mut is_value_intact = false;
     let mut is_char_skipped = false;
-
     let mut is_colon_found = false;
     let mut is_single_quoted = false;
     let mut is_double_quoted = false;
-    let mut can_start = false;
 
     for i in 0..SIZE_JSON
     {
         if (!can_start) { can_start = (i == (index + SIZE_PROP_NAME)); }
 
-        if (!is_value_parsed & can_start)
+        if (!is_done & can_start)
         {
             if (!is_colon_found)
             {
@@ -174,34 +173,40 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
             is_char_skipped |= (self.bytes[i] == globals::COLON);
             is_char_skipped |= (self.bytes[i] == globals::SPACE);
 
-            is_value_malformed = (is_value_found & is_char_skipped & !is_single_quoted & !is_double_quoted);
-            is_value_parsed = is_value_malformed;
+            is_value_intact = !(is_value_found & is_char_skipped & !is_single_quoted & !is_double_quoted);
+            is_done = !is_value_intact;
 
             if (!is_char_skipped)
             {
                 if (!is_colon_found)
                 {
-                    is_value_malformed = true;
-                    is_value_parsed = true;
+                    is_value_intact = false;
+                    is_done = true;
                 }
 
-                if (!is_value_malformed)
+                if (is_value_intact)
                 {
-                    is_value_found = true;
+                    can_array_fit_value = (value_bytes_index != SIZE_BYTE_ARRAY);
 
-                    value_bytes[value_bytes_index] = self.bytes[i] as Field;
-                    value_bytes_index += 1;
+                    if (!can_array_fit_value) { is_done = true; }
+                    else
+                    {
+                        is_value_found = true;
 
-                    is_value_parsed  = (self.bytes[i + 1] == globals::COMMA);
-                    is_value_parsed |= (self.bytes[i + 1] == globals::RIGHT_BRACE);
-                    is_value_parsed |= (self.bytes[i + 1] == globals::SINGLE_QUOTE);
-                    is_value_parsed |= (self.bytes[i + 1] == globals::DOUBLE_QUOTE);
+                        value_bytes[value_bytes_index] = self.bytes[i] as Field;
+                        value_bytes_index += 1;
+
+                        is_done  = (self.bytes[i + 1] == globals::COMMA);
+                        is_done |= (self.bytes[i + 1] == globals::RIGHT_BRACE);
+                        is_done |= (self.bytes[i + 1] == globals::SINGLE_QUOTE);
+                        is_done |= (self.bytes[i + 1] == globals::DOUBLE_QUOTE);
+                    }
                 }
             }
         }
     }
 
-    convert::StringBytes { valid: (is_value_parsed & !is_value_malformed), bytes: value_bytes }
+    convert::StringBytes { valid: (is_done & is_value_intact & can_array_fit_value), bytes: value_bytes }
 }
 
 }
