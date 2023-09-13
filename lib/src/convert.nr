@@ -1,5 +1,4 @@
 use crate::globals;
-use crate::utils;
 
 struct StringBytes<N>
 {
@@ -13,48 +12,80 @@ struct PropertyValue<T>
     value: T
 }
 
+type BytesBool = StringBytes<globals::BOOL_CHAR_SIZE>;
+type BytesU8   = StringBytes<globals::U8_CHAR_SIZE>;
+type BytesU16  = StringBytes<globals::U16_CHAR_SIZE>;
+type BytesU32  = StringBytes<globals::U32_CHAR_SIZE>;
+type BytesU64  = StringBytes<globals::U64_CHAR_SIZE>;
+
 impl<N> StringBytes<N>
 {
-    fn new_valid(bytes: [Field;N]) -> Self
+    fn new_valid(bytes: [Field; N]) -> Self
     {
         StringBytes { valid: true, bytes }
     }
 
-    fn new_invalid(bytes: [Field;N]) -> Self
+    fn new_invalid(bytes: [Field; N]) -> Self
     {
         StringBytes { valid: false, bytes }
     }
-}
 
-impl StringBytes<globals::U32_CHAR_SIZE>
-{
-    fn asU32(mut self) -> PropertyValue<u32>
+    fn transformASCIIDigitAt(self, index : Field) -> Field
     {
-        for i in 0..globals::U32_CHAR_SIZE
+        let mut byteValue = self.bytes[index];
+
+        if (byteValue != globals::BYTE_NULL)
         {
-            if (self.valid)
+            byteValue -= 0x30; // convert ASCII to digit as integer
+
+            if ((byteValue as u8) > 9) { byteValue = globals::BYTE_NULL; } // clamp
+        }
+
+        byteValue
+    }
+
+    fn transformASCIIDigits(self) -> Self
+    {
+        let mut copy = self;
+        let mut is_null_found = false;
+
+        for i in 0..N
+        {
+            if (copy.valid)
             {
-                self.bytes[i] = utils::transformASCIIDigit(self.bytes[i]);
-                self.valid &= utils::validateDigit(self.bytes[i] as u8);
+                copy.bytes[i] = copy.transformASCIIDigitAt(i);
+
+                if (is_null_found)               { copy.valid   &= (copy.bytes[i] == globals::BYTE_NULL); }
+                if (copy.valid & !is_null_found) { is_null_found = (copy.bytes[i] == globals::BYTE_NULL); }
             }
         }
 
+        copy.valid &= (copy.bytes[0] != globals::BYTE_NULL); // make sure there's at least one valid digit
+
+        copy
+    }
+
+    fn asField(self) -> PropertyValue<Field>
+    {
+        let copy = self.transformASCIIDigits();
+
         let mut value : Field = 0;
-        if (self.valid)
+
+        if (copy.valid)
         {
             let mut exponent : Field = 1;
 
-            for i in 0..globals::U32_CHAR_SIZE
+            for i in 0..N
             {
-                let index : Field = (globals::U32_CHAR_SIZE - i - 1);   // walking property value bytes in reverse
-                if (self.bytes[index] != globals::DIGIT_NULL)           // skip 'null' digits
+                let index : Field = (N - 1 - i); // walking property value bytes in reverse
+                if (copy.bytes[index] != globals::BYTE_NULL) // skip 'nulls'
                 {
-                    value += (self.bytes[index] * exponent);
+                    value += (copy.bytes[index] * exponent);
                     exponent *= 10;
                 }
             }
         }
 
-        PropertyValue { valid: self.valid, value: value as u32 }
+        PropertyValue { valid: copy.valid, value }
     }
 }
