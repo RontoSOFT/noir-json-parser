@@ -75,6 +75,10 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
     let index = self.indexOf(propName);
 
     let mut value_bytes : [Field; SIZE_BYTE_ARRAY] = [globals::BYTE_NULL; SIZE_BYTE_ARRAY];
+    dep::std::println("");
+    dep::std::println("value_bytes initially");
+    dep::std::println(value_bytes);
+
     let mut value_bytes_index : Field = 0;
 
     let mut can_start = false;
@@ -144,7 +148,11 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
             }
         }
     }
-
+    dep::std::println("");
+    dep::std::println("value_bytes finally");
+    dep::std::println(value_bytes);
+    dep::std::println((is_done & is_value_intact & can_array_fit_value));
+    dep::std::println("-------");
     convert::StringBytes { valid: (is_done & is_value_intact & can_array_fit_value), bytes: value_bytes }
 }
 
