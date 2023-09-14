@@ -1,7 +1,0 @@
-[package]
-name = "json_parser"
-type = "bin"
-authors = [""]
-compiler_version = "0.10.3"
-
-[dependencies]

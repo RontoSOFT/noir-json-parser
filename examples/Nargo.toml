@@ -1,0 +1,8 @@
+[package]
+name = "noir_json_examples"
+type = "bin"
+authors = [""]
+compiler_version = "0.11.1"
+
+[dependencies]
+noir = { path = "../lib" }
