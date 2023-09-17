@@ -6,6 +6,17 @@ global LEFT_BRACE   : u8 = 0x7b;    // left curly brace     ({)
 global RIGHT_BRACE  : u8 = 0x7d;    // right curly brace    (})
 global SPACE        : u8 = 0x20;    // space                ( )
 
+global SMALL_t      : Field = 0x74;    // small t              (t)
+global SMALL_r      : Field = 0x72;    // small r              (r)
+global SMALL_u      : Field = 0x75;    // small u              (u)
+global SMALL_e      : Field = 0x65;    // small e              (e)
+global SMALL_f      : Field = 0x66;    // small f              (f)
+global SMALL_a      : Field = 0x61;    // small a              (a)
+global SMALL_l      : Field = 0x6C;    // small l              (l)
+global SMALL_s      : Field = 0x73;    // small s              (s)
+global ZERO         : Field = 0x30;    // 0                    (0)
+global ONE          : Field = 0x31;    // 1                    (1)
+
 // value represeting 'null' for all byte arrays
 // TODO: actually -1, but can't declare it, see https://github.com/noir-lang/noir/issues/2660
 global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;

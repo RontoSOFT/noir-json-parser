@@ -88,4 +88,45 @@ impl<N> StringBytes<N>
 
         PropertyValue { valid: copy.valid, value }
     }
+
+    fn compareTwoArrays(self, another_array: [Field;5])->bool{
+
+        
+
+        let mut duplicate_of_array : [Field;5] = [0;5];
+        for i in 0..globals::BOOL_CHAR_SIZE{
+            duplicate_of_array[i] = self.bytes[i];
+        }
+
+        let mut return_boolean = true;
+
+        for i in 0..globals::BOOL_CHAR_SIZE{
+            return_boolean &= (duplicate_of_array[i] == another_array[i]);
+        }
+        return_boolean
+    }
+    fn asBool(self) -> PropertyValue<bool>{
+
+        let mut isValid = false;
+        let mut value = false;
+
+        
+        let true_array = [globals::SMALL_t , globals::SMALL_r, globals::SMALL_u, globals::SMALL_e, globals::BYTE_NULL];
+        
+        let one_array = [globals::ONE , globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL];
+        
+        let false_array = [globals::SMALL_f, globals::SMALL_a, globals::SMALL_l, globals::SMALL_s, globals::SMALL_e];
+        
+        let zero_array = [globals::ZERO, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL];
+        
+        if(self.compareTwoArrays(true_array) | self.compareTwoArrays(one_array)  ){
+            isValid = true;
+            value = true;
+        }else if(self.compareTwoArrays(false_array)  | self.compareTwoArrays(zero_array)){
+            isValid = true;
+            value = false;
+        }
+        
+        PropertyValue { valid: isValid, value }
+    }
 }
