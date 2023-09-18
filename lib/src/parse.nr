@@ -8,10 +8,11 @@ struct JSON<N>
 
 impl<SIZE_JSON> JSON<SIZE_JSON>
 {
-    fn new(string : str<SIZE_JSON>) -> Self
-    {
-        JSON { bytes: string.as_bytes() }
-    }
+
+fn new(string : str<SIZE_JSON>) -> Self
+{
+    JSON { bytes: string.as_bytes() }
+}
 
 //
 // Searches for property name (bytes to match) in JSON (bytes)
@@ -93,10 +94,7 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
 
         if (!is_done & can_start)
         {
-            if (!is_colon_found)
-            {
-                is_colon_found = (self.bytes[i] == globals::COLON);
-            }
+            if (!is_colon_found) { is_colon_found = (self.bytes[i] == globals::COLON); }
 
             if (is_colon_found)
             {
@@ -108,6 +106,7 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
             else
             {
                 is_char_skipped  = (self.bytes[i] == globals::COLON);
+                is_char_skipped |= (self.bytes[i] == globals::SPACE);
                 is_char_skipped |= (self.bytes[i] == globals::SINGLE_QUOTE);
                 is_char_skipped |= (self.bytes[i] == globals::DOUBLE_QUOTE);
             }
