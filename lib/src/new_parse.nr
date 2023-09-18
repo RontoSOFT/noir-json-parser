@@ -252,8 +252,9 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
                     if (!*is_literal)
                     {
-                        dep::std::println("number");
-                        *is_number = true;
+                        if (!*is_number) { dep::std::println("number"); }
+
+                        { *is_number = true; }
 
                         if (byte == MINUS)
                         {
@@ -273,7 +274,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                         else if (byte == ZERO)
                         {
                             dep::std::println("0");
-                            if (*found_digit_zero) { *is_faulty = true; }   // no leading zeros
+                            if (*found_digit_zero & !*is_fraction) { *is_faulty = true; }   // no leading zeros
 
                             found_digit_zero = &mut true;
 
@@ -283,13 +284,17 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                         else if (DIGITS_1_9.any(equals_byte))
                         {
                             dep::std::println("D");
-                            *is_faulty = *found_digit_zero;
+                            *is_faulty = (*found_digit_zero & !*is_fraction);
 
                             if      (*is_fraction) { *found_fraction_digit = true; }
                             else if (*found_e)     { *found_e_digit = true; }
-                            else                    { *found_digit_1_9 = true; }
+                            else                   { *found_digit_1_9 = true; }
                         }
-                        else if (byte == DECIMAL_POINT) { *is_fraction = true; }
+                        else if (byte == DECIMAL_POINT)
+                        {
+                            *is_faulty = !*found_digit_zero & !*found_digit_1_9;
+                            *is_fraction = true;
+                        }
                         else if (eE.any(equals_byte))
                         {
                             *is_faulty = (*is_fraction & !*found_fraction_digit);
@@ -310,7 +315,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 {
                     if (*is_string)
                     {
-                        if      (*expect_value)                                 { kvp.value = kvp.value.push_back(byte); }
+                        if      (*expect_value)                                  { kvp.value = kvp.value.push_back(byte); }
                         else if ((byte != QUOTATION_MARK) & (byte != BACKSLASH)) { kvp.key = kvp.key.push_back(byte); }
                     }
                     else if (*is_number | *is_literal) { kvp.value = kvp.value.push_back(byte); }
@@ -355,7 +360,7 @@ unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
         if (!found)
         {
             found = true;
-            for j in 0..K { found &= (object.key[j] == key_bytes[j]); }
+            for j in 0..K { found &= (key_bytes[j] == object.key[j]); }
 
             if (found)
             {

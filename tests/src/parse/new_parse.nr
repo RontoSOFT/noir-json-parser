@@ -24,11 +24,157 @@ fn property_number_zero()
 }
 
 #[test]
-fn property_number_any()
+fn property_number_zero_point()
+{
+    let kvp = JSON::new("{'a' : 0.}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_point_zero()
+{
+    let kvp = JSON::new("{'a' : .0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero()
+{
+    let (key, value) = ("a", "0.0");
+
+    let kvp = JSON::new("{'a' : 0.0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_one_point_zero()
+{
+    let (key, value) = ("a", "1.0");
+
+    let kvp = JSON::new("{'a' : 1.0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_multiple_digits_point_zero()
+{
+    let (key, value) = ("a", "12345.0");
+
+    let kvp = JSON::new("{'a' : 12345.0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_one_point_zero_multiple_digits()
+{
+    let (key, value) = ("a", "0.012345");
+
+    let kvp = JSON::new("{'a' : 0.012345}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_multiple_digits_point_zero_multiple_digits()
+{
+    let (key, value) = ("a", "12345.012345");
+
+    let kvp = JSON::new("{'a' : 12345.012345}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_multiple_digits_point_multiple_digits()
+{
+    let (key, value) = ("a", "12345.12345");
+
+    let kvp = JSON::new("{'a' : 12345.12345}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_double_zero()
+{
+    let kvp = JSON::new("{'a' : 00}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_leading_zero()
+{
+    let kvp = JSON::new("{'a' : 05}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit()
 {
     let (key, value) = ("a", "5");
 
     let kvp = JSON::new("{'a' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_multiple_digits()
+{
+    let (key, value) = ("a", "12345");
+
+    let kvp = JSON::new("{'a' : 12345}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_string_zero()
+{
+    let (key, value) = ("a", "'0'");
+
+    let kvp = JSON::new("{'a' : '0'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_string_multiple_zero()
+{
+    let (key, value) = ("a", "'000'");
+
+    let kvp = JSON::new("{'a' : '000'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_string_multiple_digits()
+{
+    let (key, value) = ("a", "'12345'");
+
+    let kvp = JSON::new("{'a' : '12345'}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value == value.as_bytes());
@@ -175,15 +321,6 @@ fn escapedPropertyName_Both()
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value == value.as_bytes());
-}
-
-#[test]
-fn leadingZero()
-{
-    let kvp = JSON::new("{'a' : 05}").get("a");
-
-    assert(kvp.key == [0; 1]);
-    assert(kvp.value == [0; 1]);
 }
 
 #[test]
