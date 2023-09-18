@@ -152,7 +152,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
     let mut is_escaped = &mut false;
     let mut expect_value = &mut false;
     let mut found_digit_1_9 = &mut false;
-    let mut found_digit_zero = &mut false;
+    let mut found_digit_0 = &mut false;
     let mut found_fraction_digit = &mut false;
     let mut found_e = &mut false;
     let mut found_e_digit = &mut false;
@@ -173,7 +173,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
             *is_negative = false;
             *is_fraction = false;
             *found_digit_1_9 = false;
-            *found_digit_zero = false;
+            *found_digit_0 = false;
             *found_fraction_digit = false;
             *found_e = false;
             *found_e_digit = false;
@@ -248,7 +248,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 else if (byte == KEY_DELIMITER) { *expect_value = !*is_string; } // string can contain ':'
                 else if (*expect_value & !*is_string)
                 {
-                    *is_literal = (LITERALS.any(equals_byte) & !*found_digit_zero & !*found_digit_1_9);
+                    *is_literal = (LITERALS.any(equals_byte) & !*found_digit_0 & !*found_digit_1_9);
 
                     if (!*is_literal)
                     {
@@ -258,14 +258,8 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
                         if (byte == MINUS)
                         {
-                            *is_faulty = (*is_negative & !*found_e) | (*found_e & !*found_e_digit);
+                            *is_faulty = (*is_negative & !*found_e) | (*found_e & *found_e_digit) | (*found_digit_0 | *found_digit_1_9);
                             *is_negative = !*is_faulty;
-
-                            // if (*is_negative) { *is_faulty = (!*found_e | (*found_e & *found_e_digit)); }
-                            // else               { *is_negative = true; }
-
-                            // if (*is_negative & !*found_e) { *is_faulty = true; }
-                            // else                            { *is_negative = true; }
                         }
                         else if (byte == PLUS)
                         {
@@ -274,9 +268,9 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                         else if (byte == ZERO)
                         {
                             dep::std::println("0");
-                            if (*found_digit_zero & !*is_fraction) { *is_faulty = true; }   // no leading zeros
+                            if (*found_digit_0 & !*is_fraction) { *is_faulty = true; }   // no leading zeros
 
-                            found_digit_zero = &mut true;
+                            found_digit_0 = &mut true;
 
                             if (*is_fraction) { *found_fraction_digit = true; }
                             if (*found_e)     { *found_e_digit = true; }
@@ -284,7 +278,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                         else if (DIGITS_1_9.any(equals_byte))
                         {
                             dep::std::println("D");
-                            *is_faulty = (*found_digit_zero & !*is_fraction);
+                            *is_faulty = (*found_digit_0 & !*is_fraction);
 
                             if      (*is_fraction) { *found_fraction_digit = true; }
                             else if (*found_e)     { *found_e_digit = true; }
@@ -292,7 +286,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                         }
                         else if (byte == DECIMAL_POINT)
                         {
-                            *is_faulty = !*found_digit_zero & !*found_digit_1_9;
+                            *is_faulty = !*found_digit_0 & !*found_digit_1_9;
                             *is_fraction = true;
                         }
                         else if (eE.any(equals_byte))
