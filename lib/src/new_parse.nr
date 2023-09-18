@@ -141,92 +141,63 @@ unconstrained fn print_bytes<N>(label : str<N>, value_bytes : [u8])
     dep::std::println("}");
 }
 
-// TODO: Temp "solution" due to lambda/closure bug
-struct ControlStruct
-{
-    is_faulty : bool,
-    is_string : bool,
-    is_number : bool,
-    is_negative : bool,
-    is_fraction : bool,
-    is_literal : bool,
-    is_escaped : bool,
-    expect_value : bool,
-    found_digit_1_9 : bool,
-    found_digit_zero : bool,
-    found_fraction_digit : bool,
-    found_e : bool,
-    found_e_digit : bool,
-}
-
-impl ControlStruct
-{
-    unconstrained fn new() -> Self
-    {
-        Self
-        {
-            is_faulty : false,
-            is_string : false,
-            is_number : false,
-            is_negative : false,
-            is_fraction : false,
-            is_literal : false,
-            is_escaped : false,
-            expect_value : false,
-            found_digit_1_9 : false,
-            found_digit_zero : false,
-            found_fraction_digit : false,
-            found_e : false,
-            found_e_digit : false,
-        }
-    }
-}
-
 unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 {
-    let mut json : [KeyValueSlice] = [];
-    let mut kvp = KeyValueSlice::new();
+    let mut is_faulty = &mut false;
+    let mut is_string = &mut false;
+    let mut is_number = &mut false;
+    let mut is_negative = &mut false;
+    let mut is_fraction = &mut false;
+    let mut is_literal = &mut false;
+    let mut is_escaped = &mut false;
+    let mut expect_value = &mut false;
+    let mut found_digit_1_9 = &mut false;
+    let mut found_digit_zero = &mut false;
+    let mut found_fraction_digit = &mut false;
+    let mut found_e = &mut false;
+    let mut found_e_digit = &mut false;
 
-    let mut _ = ControlStruct::new();
+    let mut json : &mut [KeyValueSlice] = &mut [];
+    let mut kvp = &mut KeyValueSlice::new();
 
-    let on_value_done = |mut _ : &mut ControlStruct, mut json : &mut [KeyValueSlice], mut kvp : &mut KeyValueSlice|
+    let on_value_done = ||
     {
-        _.is_faulty = (kvp.value.len() == 0);
+        *is_faulty = (kvp.value.len() == 0);
 
-        if (_.is_number)
+        if (*is_number)
         {
-            _.is_faulty  = (_.found_e & !_.found_e_digit);
-            _.is_faulty |= (_.is_fraction & !_.found_fraction_digit);
+            *is_faulty  = (*found_e & !*found_e_digit);
+            *is_faulty |= (*is_fraction & !*found_fraction_digit);
 
-            _.is_number = false;
-            _.is_negative = false;
-            _.is_fraction = false;
-            _.found_digit_1_9 = false;
-            _.found_digit_zero = false;
-            _.found_fraction_digit = false;
-            _.found_e = false;
-            _.found_e_digit = false;
+            *is_number = false;
+            *is_negative = false;
+            *is_fraction = false;
+            *found_digit_1_9 = false;
+            *found_digit_zero = false;
+            *found_fraction_digit = false;
+            *found_e = false;
+            *found_e_digit = false;
         }
-        else if (_.is_literal)
+        else if (*is_literal)
         {
-            _.is_literal = false;
+            *is_literal = false;
 
             if (kvp.value.len() == 4)
             {
-                if      (kvp.value[0] == LITERALS_NULL[0])  { for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_NULL[j]); } }
-                else if (kvp.value[0] == LITERALS_TRUE[0])  { for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_TRUE[j]); } }
-                else { _.is_faulty = true; }
+                if      (kvp.value[0] == LITERALS_NULL[0])  { for j in 0..4 { *is_faulty |= (kvp.value[j] != LITERALS_NULL[j]); } }
+                else if (kvp.value[0] == LITERALS_TRUE[0])  { for j in 0..4 { *is_faulty |= (kvp.value[j] != LITERALS_TRUE[j]); } }
+                else { *is_faulty = true; }
             }
             else if (kvp.value.len() == 5)
             {
-                if (kvp.value[0] == LITERALS_FALSE[0]) { for j in 0..5 { _.is_faulty |= (kvp.value[j] != LITERALS_FALSE[j]); } }
-                else { _.is_faulty = true; }
+                if (kvp.value[0] == LITERALS_FALSE[0]) { for j in 0..5 { *is_faulty |= (kvp.value[j] != LITERALS_FALSE[j]); } }
+                else { *is_faulty = true; }
             }
-            else { _.is_faulty = true; }
+            else { *is_faulty = true; }
         }
-        else if (_.is_string & _.expect_value) { kvp.value = (*kvp).value.push_back(QUOTATION_MARK); }
+        else if (*is_string & *expect_value) { kvp.value = (*kvp).value.push_back(QUOTATION_MARK); }
 
-        if (!_.is_faulty & _.expect_value)
+        if (!*is_faulty & *expect_value)
         {
             print_bytes("value", kvp.value);
 
@@ -234,12 +205,12 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
             *kvp = KeyValueSlice::new();
         }
 
-        _.expect_value = !_.is_string;
+        expect_value = &mut !(*is_string);
     };
 
     for i in 0..SIZE_JSON
     {
-        if (!_.is_faulty)
+        if (!*is_faulty)
         {
             let byte = bytes[i];
             let equals_byte = |x| { byte == x };
@@ -254,109 +225,109 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 {
                     // TODO
                 }
-                else if ((byte == END_OBJECT) | (byte == END_ARRAY)) { on_value_done(&mut _, &mut json, &mut kvp); }
+                else if ((byte == END_OBJECT) | (byte == END_ARRAY)) { on_value_done(); }
                 else if (byte == QUOTATION_MARK)
                 {
-                    if (_.is_string)
+                    if (*is_string)
                     {
-                        if (_.expect_value)
+                        if (*expect_value)
                         {
-                            if (!_.is_escaped) { on_value_done(&mut _, &mut json, &mut kvp); }
-                            _.is_string = _.is_escaped;
+                            if (!*is_escaped) { on_value_done(); }
+                            is_string = &mut *is_escaped;
                         }
                         else
                         {
                             print_bytes("name", kvp.key);
-                            _.is_string = false;
+                            *is_string = false;
                         }
                     }
-                    else { _.is_string = true; }
+                    else { *is_string = true; }
 
-                    _.is_escaped = false;
+                    is_escaped = &mut false;
                 }
-                else if (byte == KEY_DELIMITER) { _.expect_value = !_.is_string; } // string can contain ':'
-                else if (_.expect_value & !_.is_string)
+                else if (byte == KEY_DELIMITER) { *expect_value = !*is_string; } // string can contain ':'
+                else if (*expect_value & !*is_string)
                 {
-                    _.is_literal = (LITERALS.any(equals_byte) & !_.found_digit_zero & !_.found_digit_1_9);
+                    *is_literal = (LITERALS.any(equals_byte) & !*found_digit_zero & !*found_digit_1_9);
 
-                    if (!_.is_literal)
+                    if (!*is_literal)
                     {
                         dep::std::println("number");
-                        _.is_number = true;
+                        *is_number = true;
 
                         if (byte == MINUS)
                         {
-                            _.is_faulty = (_.is_negative & !_.found_e) | (_.found_e & !_.found_e_digit);
-                            _.is_negative = !_.is_faulty;
+                            *is_faulty = (*is_negative & !*found_e) | (*found_e & !*found_e_digit);
+                            *is_negative = !*is_faulty;
 
-                            // if (_.is_negative) { _.is_faulty = (!_.found_e | (_.found_e & _.found_e_digit)); }
-                            // else               { _.is_negative = true; }
+                            // if (*is_negative) { *is_faulty = (!*found_e | (*found_e & *found_e_digit)); }
+                            // else               { *is_negative = true; }
 
-                            // if (_.is_negative & !_.found_e) { _.is_faulty = true; }
-                            // else                            { _.is_negative = true; }
+                            // if (*is_negative & !*found_e) { *is_faulty = true; }
+                            // else                            { *is_negative = true; }
                         }
                         else if (byte == PLUS)
                         {
-                            _.is_faulty = (!_.found_e | (_.found_e & _.found_e_digit));
+                            *is_faulty = (!*found_e | (*found_e & *found_e_digit));
                         }
                         else if (byte == ZERO)
                         {
                             dep::std::println("0");
-                            if (_.found_digit_zero) { _.is_faulty = true; }   // no leading zeros
+                            if (*found_digit_zero) { *is_faulty = true; }   // no leading zeros
 
-                            _.found_digit_zero = true;
+                            found_digit_zero = &mut true;
 
-                            if (_.is_fraction) { _.found_fraction_digit = true; }
-                            if (_.found_e)     { _.found_e_digit = true; }
+                            if (*is_fraction) { *found_fraction_digit = true; }
+                            if (*found_e)     { *found_e_digit = true; }
                         }
                         else if (DIGITS_1_9.any(equals_byte))
                         {
                             dep::std::println("D");
-                            _.is_faulty = _.found_digit_zero;
+                            *is_faulty = *found_digit_zero;
 
-                            if      (_.is_fraction) { _.found_fraction_digit = true; }
-                            else if (_.found_e)     { _.found_e_digit = true; }
-                            else                    { _.found_digit_1_9 = true; }
+                            if      (*is_fraction) { *found_fraction_digit = true; }
+                            else if (*found_e)     { *found_e_digit = true; }
+                            else                    { *found_digit_1_9 = true; }
                         }
-                        else if (byte == DECIMAL_POINT) { _.is_fraction = true; }
+                        else if (byte == DECIMAL_POINT) { *is_fraction = true; }
                         else if (eE.any(equals_byte))
                         {
-                            _.is_faulty = (_.is_fraction & !_.found_fraction_digit);
-                            _.found_e = !_.is_faulty;
+                            *is_faulty = (*is_fraction & !*found_fraction_digit);
+                            *found_e = !*is_faulty;
                         }
-                        else { _.is_faulty = true; }
+                        else { *is_faulty = true; }
                     }
                 }
                 else if (byte == BACKSLASH)
                 {
                     dep::std::println("escape");
-                    _.is_escaped = true;
+                    *is_escaped = true;
                 }
-                else { _.is_faulty = !_.is_string; }
+                else { *is_faulty = !*is_string; }
 
                 // store the value
-                if (!_.is_faulty)
+                if (!*is_faulty)
                 {
-                    if (_.is_string)
+                    if (*is_string)
                     {
-                        if      (_.expect_value)                                 { kvp.value = kvp.value.push_back(byte); }
+                        if      (*expect_value)                                 { kvp.value = kvp.value.push_back(byte); }
                         else if ((byte != QUOTATION_MARK) & (byte != BACKSLASH)) { kvp.key = kvp.key.push_back(byte); }
                     }
-                    else if (_.is_number | _.is_literal) { kvp.value = kvp.value.push_back(byte); }
+                    else if (*is_number | *is_literal) { kvp.value = kvp.value.push_back(byte); }
                 }
             }
-            else if (_.expect_value)
+            else if (*expect_value)
             {
-                if      (_.is_string)          { kvp.value = kvp.value.push_back(byte); }
-                else if (kvp.value.len() != 0) { on_value_done(&mut _, &mut json, &mut kvp); }
+                if      (*is_string)           { kvp.value = kvp.value.push_back(byte); }
+                else if (kvp.value.len() != 0) { on_value_done(); }
             }
 
-            // dep::std::println(_.is_faulty);
-            if (_.is_faulty) { let pos = i + 1; dep::std::println(f"Unexpected character at position {pos}"); }
+            // dep::std::println(*is_faulty);
+            if (*is_faulty) { let pos = i + 1; dep::std::println(f"Unexpected character at position {pos}"); }
         }
     }
 
-    json
+    { *json }
 }
 
 impl<SIZE_JSON> JSON<SIZE_JSON>
