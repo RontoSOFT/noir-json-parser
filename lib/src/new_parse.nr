@@ -191,6 +191,8 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
     let on_value_done = |mut _ : &mut ControlStruct, mut json : &mut [KeyValueSlice], mut kvp : &mut KeyValueSlice|
     {
+        _.is_faulty = (kvp.value.len() == 0);
+
         if (_.is_number)
         {
             _.is_faulty  = (_.found_e & !_.found_e_digit);
@@ -211,12 +213,16 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
             if (kvp.value.len() == 4)
             {
-                for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_NULL[j]); }
-
-                if (_.is_faulty) { for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_TRUE[j]); } }
+                if      (kvp.value[0] == LITERALS_NULL[0])  { for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_NULL[j]); } }
+                else if (kvp.value[0] == LITERALS_TRUE[0])  { for j in 0..4 { _.is_faulty |= (kvp.value[j] != LITERALS_TRUE[j]); } }
+                else { _.is_faulty = true; }
             }
-            else if (kvp.value.len() == 5) { for j in 0..5 { _.is_faulty |= (kvp.value[j] != LITERALS_FALSE[j]); } }
-            else                           { _.is_faulty = true; }
+            else if (kvp.value.len() == 5)
+            {
+                if (kvp.value[0] == LITERALS_FALSE[0]) { for j in 0..5 { _.is_faulty |= (kvp.value[j] != LITERALS_FALSE[j]); } }
+                else { _.is_faulty = true; }
+            }
+            else { _.is_faulty = true; }
         }
         else if (_.is_string & _.expect_value) { kvp.value = (*kvp).value.push_back(QUOTATION_MARK); }
 
@@ -267,8 +273,6 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                     else { _.is_string = true; }
 
                     _.is_escaped = false;
-
-                        // _.is_string = !_.is_string;
                 }
                 else if (byte == KEY_DELIMITER) { _.expect_value = !_.is_string; } // string can contain ':'
                 else if (_.expect_value & !_.is_string)
@@ -335,7 +339,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 {
                     if (_.is_string)
                     {
-                        if (_.expect_value) { kvp.value = kvp.value.push_back(byte); }
+                        if      (_.expect_value)                                 { kvp.value = kvp.value.push_back(byte); }
                         else if ((byte != QUOTATION_MARK) & (byte != BACKSLASH)) { kvp.key = kvp.key.push_back(byte); }
                     }
                     else if (_.is_number | _.is_literal) { kvp.value = kvp.value.push_back(byte); }

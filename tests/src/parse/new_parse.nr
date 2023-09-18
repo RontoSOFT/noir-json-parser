@@ -35,6 +35,28 @@ fn property_number_any()
 }
 
 #[test]
+fn property_literal_null()
+{
+    let (key, value) = ("a", "null");
+
+    let kvp = JSON::new("{'a' : null}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_literal_true()
+{
+    let (key, value) = ("a", "true");
+
+    let kvp = JSON::new("{'a' : true}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
 fn property_literal_false()
 {
     let (key, value) = ("a", "false");
@@ -62,6 +84,50 @@ fn property_string_with_escaped_quote()
     let (key, value) = ("a", "'a\'bc'");
 
     let kvp = JSON::new("{'a' : 'a\'bc'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_string_with_double_escape()
+{
+    let (key, value) = ("a", "'a\\bc'");
+
+    let kvp = JSON::new("{'a' : 'a\\bc'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_string_with_double_escape_and_quote()
+{
+    let (key, value) = ("a", "'a\\'bc'");
+
+    let kvp = JSON::new("{'a' : 'a\\'bc'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_string_null()
+{
+    let (key, value) = ("a", "'null'");
+
+    let kvp = JSON::new("{'a' : 'null'}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_string_true()
+{
+    let (key, value) = ("a", "'true'");
+
+    let kvp = JSON::new("{'a' : 'true'}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value == value.as_bytes());
@@ -114,31 +180,88 @@ fn escapedPropertyName_Both()
 #[test]
 fn leadingZero()
 {
-    let key = "a";
-
-    let kvp = JSON::new("{'a' : 05}").get(key);
+    let kvp = JSON::new("{'a' : 05}").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value == [0; 1]);
 }
 
 #[test]
-fn brokenLiteral()
+fn literalWithEscape()
 {
-    let key = "a";
-
-    let kvp = JSON::new("{'a' : fa}").get(key);
+    let kvp = JSON::new("{'a' : fals\e}").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value == [0; 1]);
 }
 
 #[test]
-fn incompleteLiteral()
+fn incompleteLiteral_1()
 {
-    let key = "a";
+    let kvp = JSON::new("{'a' : fals}").get("a");
 
-    let kvp = JSON::new("{'a' : fa}").get(key);
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn incompleteLiteral_2()
+{
+    let kvp = JSON::new("{'a' : t}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn incompleteLiteral_3()
+{
+    let kvp = JSON::new("{'a' : nul}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn wrongLiteral_1()
+{
+    let kvp = JSON::new("{'a' : falst}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn wrongLiteral_2()
+{
+    let kvp = JSON::new("{'a' : nult}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn wrongLiteral_3()
+{
+    let kvp = JSON::new("{'a' : truf}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn missingValue_1()
+{
+    let kvp = JSON::new("{'a' : }").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn missingValue_2()
+{
+    let kvp = JSON::new("{'a' : ").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value == [0; 1]);
