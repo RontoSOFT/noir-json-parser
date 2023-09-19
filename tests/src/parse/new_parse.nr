@@ -24,7 +24,7 @@ fn property_number_zero()
 }
 
 #[test]
-fn property_number_negative_zero()
+fn property_number_minus_zero()
 {
     let (key, value) = ("a", "-0");
 
@@ -35,7 +35,7 @@ fn property_number_negative_zero()
 }
 
 #[test]
-fn property_number_negative_one()
+fn property_number_minus_one()
 {
     let (key, value) = ("a", "-1");
 
@@ -43,24 +43,6 @@ fn property_number_negative_one()
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value == value.as_bytes());
-}
-
-#[test]
-fn property_number_zero_point()
-{
-    let kvp = JSON::new("{'a' : 0.}").get("a");
-
-    assert(kvp.key == [0; 1]);
-    assert(kvp.value == [0; 1]);
-}
-
-#[test]
-fn property_number_point_zero()
-{
-    let kvp = JSON::new("{'a' : .0}").get("a");
-
-    assert(kvp.key == [0; 1]);
-    assert(kvp.value == [0; 1]);
 }
 
 #[test]
@@ -75,12 +57,93 @@ fn property_number_zero_point_zero()
 }
 
 #[test]
-fn property_number_zero_point_zero_letter()
+fn property_number_zero_e_zero()
 {
-    let kvp = JSON::new("{'a' : 0.0f}").get("a");
+    let (key, value) = ("a", "0e0");
+    let kvp = JSON::new("{'a' : 0e0}").get(key);
 
-    assert(kvp.key == [0; 1]);
-    assert(kvp.value == [0; 1]);
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_zero_e_plus_zero()
+{
+    let (key, value) = ("a", "0e+0");
+    let kvp = JSON::new("{'a' : 0e+0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_zero_e_minus_zero()
+{
+    let (key, value) = ("a", "0e-0");
+    let kvp = JSON::new("{'a' : 0e-0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_minus_zero_e_minus_zero()
+{
+    let (key, value) = ("a", "-0e-0");
+    let kvp = JSON::new("{'a' : -0e-0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_minus_zero_e_plus_zero()
+{
+    let (key, value) = ("a", "-0e+0");
+    let kvp = JSON::new("{'a' : -0e+0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_zero_point_zero_e_zero_plus_zero()
+{
+    let (key, value) = ("a", "0.0e+0");
+    let kvp = JSON::new("{'a' : 0.0e+0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_zero_point_zero_e_zero_minus_zero()
+{
+    let (key, value) = ("a", "0.0e-0");
+    let kvp = JSON::new("{'a' : 0.0e-0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_minus_zero_point_zero_e_zero_minus_zero()
+{
+    let (key, value) = ("a", "-0.0e-0");
+    let kvp = JSON::new("{'a' : -0.0e-0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
+}
+
+#[test]
+fn property_number_minus_zero_point_zero_e_zero_plus_zero()
+{
+    let (key, value) = ("a", "-0.0e+0");
+    let kvp = JSON::new("{'a' : -0.0e+0}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value == value.as_bytes());
 }
 
 #[test]
@@ -106,7 +169,7 @@ fn property_number_multiple_digits_point_zero()
 }
 
 #[test]
-fn property_negative_number_multiple_digits_point_zero()
+fn property_minus_number_multiple_digits_point_zero()
 {
     let (key, value) = ("a", "-12345.0");
 
@@ -128,7 +191,7 @@ fn property_number_zero_point_zero_multiple_digits()
 }
 
 #[test]
-fn property_negative_number_zero_point_multiple_digits()
+fn property_minus_number_zero_point_multiple_digits()
 {
     let (key, value) = ("a", "-0.12345");
 
@@ -161,7 +224,7 @@ fn property_number_multiple_digits_point_multiple_digits()
 }
 
 #[test]
-fn property_negative_number_multiple_digits_point_multiple_digits()
+fn property_minus_number_multiple_digits_point_multiple_digits()
 {
     let (key, value) = ("a", "-12345.12345");
 
@@ -181,7 +244,7 @@ fn property_number_double_zero()
 }
 
 #[test]
-fn property_double_negative_number()
+fn property_double_minus_number()
 {
     let kvp = JSON::new("{'a' : --1}").get("a");
 
@@ -190,7 +253,7 @@ fn property_double_negative_number()
 }
 
 #[test]
-fn property_negative_between_digits_of_number()
+fn property_minus_between_digits_of_number()
 {
     let kvp = JSON::new("{'a' : 1-1}").get("a");
 
@@ -208,7 +271,7 @@ fn property_two_digits_between_two_negatives()
 }
 
 #[test]
-fn property_negative_after_digits_of_number()
+fn property_minus_after_digits_of_number()
 {
     let kvp = JSON::new("{'a' : 1-}").get("a");
 
@@ -217,7 +280,7 @@ fn property_negative_after_digits_of_number()
 }
 
 #[test]
-fn property_negative_number_one_point_negative_zero()
+fn property_minus_number_one_point_minus_zero()
 {
     let kvp = JSON::new("{'a' : -1.-0}").get("a");
 
@@ -226,9 +289,171 @@ fn property_negative_number_one_point_negative_zero()
 }
 
 #[test]
-fn property_number_one_point_negative_zero()
+fn property_number_one_point_minus_zero()
 {
     let kvp = JSON::new("{'a' : -1.-0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point()
+{
+    let kvp = JSON::new("{'a' : 0.}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_point_zero()
+{
+    let kvp = JSON::new("{'a' : .0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero_letter()
+{
+    let kvp = JSON::new("{'a' : 0.0f}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero_e_letter()
+{
+    let kvp = JSON::new("{'a' : 0.0ef}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero_e_escaped_zero()
+{
+    let kvp = JSON::new("{'a' : 0.0e\0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_escaped_zero_point_zero_e_zero()
+{
+    let kvp = JSON::new("{'a' : \0.0e0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero_escaped_e_zero()
+{
+    let kvp = JSON::new("{'a' : 0.0\e0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_plus_zero_e_zero()
+{
+    let kvp = JSON::new("{'a' : 0+e0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_minus_zero_e_minus_minus_zero()
+{
+    let kvp = JSON::new("{'a' : -0e--0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_zero_point_zero_e_zero_plus_plus_zero()
+{
+    let kvp = JSON::new("{'a' : 0.0e++0}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_e()
+{
+    let kvp = JSON::new("{'a' : 1e}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_e_minus()
+{
+    let kvp = JSON::new("{'a' : 1e-}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_e_plus()
+{
+    let kvp = JSON::new("{'a' : 1e+}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_zero_e()
+{
+    let kvp = JSON::new("{'a' : 1.0e}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_zero_e_minus()
+{
+    let kvp = JSON::new("{'a' : 1.0e-}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_one_point_zero_e_plus()
+{
+    let kvp = JSON::new("{'a' : 1.0e+}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_minus_one_point_zero_e_plus()
+{
+    let kvp = JSON::new("{'a' : -1.0e+}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value == [0; 1]);
+}
+
+#[test]
+fn property_number_minus_one_point_zero_e_minus()
+{
+    let kvp = JSON::new("{'a' : -1.0e-}").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value == [0; 1]);
