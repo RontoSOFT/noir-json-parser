@@ -133,17 +133,17 @@ impl KeyValueSlice
     }
 }
 
+struct WrappedJSON
+{
+    _ : [KeyValueSlice]
+}
+
 unconstrained fn print_bytes<N>(label : str<N>, value_bytes : [u8])
 {
     dep::std::println(label);
     dep::std::println("{");
     for j in 0..value_bytes.len() { dep::std::println(value_bytes[j]); }
     dep::std::println("}");
-}
-
-struct WrappedJSON
-{
-    _ : [KeyValueSlice]
 }
 
 unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
@@ -259,7 +259,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                             (*new_key_value_pair)();
                         }
 
-                        { *is_string = (*expect_value & (byte_prev == BACKSLASH));}
+                        { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
                     }
                     else { *is_string = true; }
                 }
