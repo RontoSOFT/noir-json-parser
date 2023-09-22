@@ -3,7 +3,7 @@ use crate::globals;
 struct StringBytes<N>
 {
     valid: bool,
-    bytes: [Field;N]
+    bytes: [u8; N]
 }
 
 struct PropertyValue<T>
@@ -20,28 +20,14 @@ type BytesU64  = StringBytes<globals::U64_CHAR_SIZE>;
 
 impl<N> StringBytes<N>
 {
-    fn new_valid(bytes: [Field; N]) -> Self
+    fn new_valid(bytes: [u8; N]) -> Self
     {
         StringBytes { valid: true, bytes }
     }
 
-    fn new_invalid(bytes: [Field; N]) -> Self
+    fn new_invalid(bytes: [u8; N]) -> Self
     {
         StringBytes { valid: false, bytes }
-    }
-
-    fn transformASCIIDigitAt(self, index : Field) -> Field
-    {
-        let mut byteValue = self.bytes[index];
-
-        if (byteValue != globals::BYTE_NULL)
-        {
-            byteValue -= 0x30; // convert ASCII to digit as integer
-
-            if ((byteValue as u8) > 9) { byteValue = globals::BYTE_NULL; } // clamp
-        }
-
-        byteValue
     }
 
     fn transformASCIIDigits(self) -> Self
@@ -53,14 +39,18 @@ impl<N> StringBytes<N>
         {
             if (copy.valid)
             {
-                copy.bytes[i] = copy.transformASCIIDigitAt(i);
+                copy.bytes[i] -= 0x30; // convert ASCII to digit as integer
+                if (copy.bytes[i] > 9) // clamp
+                {
+                    copy.bytes[i] = globals::BYTE_NULL;
+                    is_null_found = true;
+                }
 
-                if (is_null_found)               { copy.valid   &= (copy.bytes[i] == globals::BYTE_NULL); }
-                if (copy.valid & !is_null_found) { is_null_found = (copy.bytes[i] == globals::BYTE_NULL); }
+                if (is_null_found) { copy.valid &= (copy.bytes[i] == globals::BYTE_NULL); } // ensure bytes following the first null are also null
             }
         }
 
-        copy.valid &= (copy.bytes[0] != globals::BYTE_NULL); // make sure there's at least one valid digit
+        copy.valid &= (copy.bytes[0] != globals::BYTE_NULL); // ensure at least one digit is valid
 
         copy
     }
@@ -80,7 +70,7 @@ impl<N> StringBytes<N>
                 let index : Field = (N - 1 - i); // walking property value bytes in reverse
                 if (copy.bytes[index] != globals::BYTE_NULL) // skip 'nulls'
                 {
-                    value += (copy.bytes[index] * exponent);
+                    value += ((copy.bytes[index] as Field) * exponent);
                     exponent *= 10;
                 }
             }

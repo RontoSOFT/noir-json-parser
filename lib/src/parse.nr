@@ -1,5 +1,5 @@
 use crate::globals;
-use crate::convert;
+use crate::convert::StringBytes;
 
 struct JSON<N>
 {
@@ -69,13 +69,13 @@ fn indexOf<SIZE_PROP_NAME>(self, propName : str<SIZE_PROP_NAME>) -> Field
 //
 // @returns A StringBytes<N> instance representing the ASCII byte array and its validity
 //
-fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>) -> convert::StringBytes<SIZE_BYTE_ARRAY>
+fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>) -> StringBytes<SIZE_BYTE_ARRAY>
 {
     // TODO: Unconstrained functions cannot call *any other functions*
     // https://github.com/AztecProtocol/aztec-packages/blob/master/yarn-project/acir-simulator/README.md
     let index = self.indexOf(propName);
 
-    let mut value_bytes : [Field; SIZE_BYTE_ARRAY] = [globals::BYTE_NULL; SIZE_BYTE_ARRAY];
+    let mut value_bytes : [u8; SIZE_BYTE_ARRAY] = [globals::BYTE_NULL; SIZE_BYTE_ARRAY];
     let mut value_bytes_index : Field = 0;
 
     let mut can_start = false;
@@ -131,7 +131,10 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
                     {
                         is_value_found = true;
 
-                        value_bytes[value_bytes_index] = self.bytes[i] as Field;
+                        let x = self.bytes[i] as Field;
+                        value_bytes[value_bytes_index] = x as u8;
+                        // TODO:
+                        // value_bytes[value_bytes_index] = self.bytes[i];
                         value_bytes_index += 1;
 
                         is_done  = (self.bytes[i + 1] == globals::COMMA);
@@ -144,7 +147,7 @@ fn bytesOf<SIZE_PROP_NAME, SIZE_BYTE_ARRAY>(self, propName : str<SIZE_PROP_NAME>
         }
     }
 
-    convert::StringBytes { valid: (is_done & is_value_intact & can_array_fit_value), bytes: value_bytes }
+    StringBytes { valid: (is_done & is_value_intact & can_array_fit_value), bytes: value_bytes }
 }
 
 }
