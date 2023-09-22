@@ -10,14 +10,14 @@ fn two_properties()
     let kvp = json.get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 
     let (key2, value2) = ("b", "3");
 
     let kvp2 = json.get(key2);
 
     assert(kvp2.key == key2.as_bytes());
-    assert(kvp2.value == value2.as_bytes());
+    assert(kvp2.value.bytes == value2.as_bytes());
 }
 
 
@@ -29,7 +29,7 @@ fn two_properties_same_name_replace_property()
     let kvp = JSON::new("{'a' : 5, 'a' : 3}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]

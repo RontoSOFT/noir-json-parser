@@ -8,7 +8,7 @@ fn property_string_number_zero()
     let kvp = JSON::new("{'a' : '0'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -19,7 +19,7 @@ fn property_string_number_multiple_zero()
     let kvp = JSON::new("{'a' : '000'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn property_string_number_multiple_digits()
     let kvp = JSON::new("{'a' : '12345'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -41,7 +41,7 @@ fn property_string()
     let kvp = JSON::new("{'a' : 'abc'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -52,7 +52,7 @@ fn property_string_with_escaped_quote()
     let kvp = JSON::new("{'a' : 'a\'bc'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn property_string_with_double_escape()
     let kvp = JSON::new("{'a' : 'a\\bc'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -74,7 +74,7 @@ fn property_string_with_double_escape_and_quote()
     let kvp = JSON::new("{'a' : 'a\\'bc'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn property_string_null()
     let kvp = JSON::new("{'a' : 'null'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn property_string_true()
     let kvp = JSON::new("{'a' : 'true'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn property_string_false()
     let kvp = JSON::new("{'a' : 'false'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -118,7 +118,7 @@ fn property_name_string_value_right_brace()
     let kvp = JSON::new("{'a' : '5}'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }
 
 #[test]
@@ -129,5 +129,5 @@ fn property_name_string_value_left_brace()
     let kvp = JSON::new("{'a' : '5{'}").get(key);
 
     assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
 }

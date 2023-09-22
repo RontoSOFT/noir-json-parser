@@ -42,7 +42,8 @@ global LITERALS_FALSE = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ];
 
 // value represeting 'null' for all byte arrays
 // TODO: actually -1, but can't declare it, see https://github.com/noir-lang/noir/issues/2660
-global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
+// global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
+global BYTE_NULL     : u8 = 0xff;
 
 global DIGIT_NULL       : Field = 10;   // value represeting 'null' for digit byte arrays
 
