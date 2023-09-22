@@ -1,6 +1,28 @@
 use dep::noir::new_parse::JSON;
 
 #[test]
+fn property_name_single()
+{
+    let (key, value) = ("a", "5");
+
+    let kvp = JSON::new("{'a' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
+fn property_name_multi()
+{
+    let (key, value) = ("abc", "5");
+
+    let kvp = JSON::new("{'abc' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
 fn property_name_missing_value()
 {
     let kvp = JSON::new("{'a' : }").get("a");
@@ -30,6 +52,17 @@ fn property_name_colon()
 }
 
 #[test]
+fn property_name_space()
+{
+    let (key, value) = ("a ", "5");
+
+    let kvp = JSON::new("{'a ' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
 fn property_name_right_brace()
 {
     let (key, value) = ("a}", "5");
@@ -46,6 +79,28 @@ fn property_name_left_brace()
     let (key, value) = ("a{", "5");
 
     let kvp = JSON::new("{'a{' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
+fn property_name_right_bracket()
+{
+    let (key, value) = ("a]", "5");
+
+    let kvp = JSON::new("{'a]' : 5}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
+fn property_name_left_bracket()
+{
+    let (key, value) = ("a[", "5");
+
+    let kvp = JSON::new("{'a[' : 5}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value.bytes == value.as_bytes());

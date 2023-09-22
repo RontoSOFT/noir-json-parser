@@ -309,7 +309,11 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                     else if (*is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { kvp.key = kvp.key.push_back(*byte); }
                 }
             }
-            else if (*is_string)           { kvp.value = kvp.value.push_back(*byte); }
+            else if (*is_string)
+            {
+                if (*expect_value) { kvp.value = kvp.value.push_back(*byte); }
+                else               { kvp.key = kvp.key.push_back(*byte); }
+            }
             else if (kvp.value.len() != 0) { value_parsed(); }
 
             i_minus_1 += 1;
