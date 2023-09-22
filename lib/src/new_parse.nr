@@ -162,6 +162,10 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
     let mut found_fraction = &mut false;
     let mut found_fraction_digit = &mut false;
 
+    let mut count_pairs = 0;
+    let mut count_objects = 0;
+    let mut count_arrays = 0;
+
     let mut json = &mut WrappedJSON { _ : [] };
     let mut kvp = &mut KeyValueSlice::new();
 
@@ -235,17 +239,32 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
             if (!WHITESPACES.any(equals_byte))
             {
-                if (*byte == BEGIN_OBJECT)
+                if      ((*byte == BEGIN_OBJECT) & !*is_string)
                 {
-                    // TODO
+                    *is_faulty = (count_objects != 0) | *is_number | *is_literal;
+                    count_objects += 1;
                 }
-                else if (*byte == BEGIN_ARRAY)
+                else if ((*byte == END_OBJECT) & !*is_string)
                 {
-                    // TODO
+                    *is_faulty = (count_objects != 1) | (json._.len() != count_pairs);
+                    if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    count_objects -= 1;
                 }
-                else if ((*byte == END_OBJECT) | (*byte == END_ARRAY) | (*byte == VALUE_DELIMITER))
+                else if ((*byte == BEGIN_ARRAY) & !*is_string)
                 {
-                    if (!*is_string & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    *is_faulty = (count_arrays != 0) | *is_number | *is_literal | !*expect_value;
+                    count_arrays += 1;
+                }
+                else if ((*byte == END_ARRAY) & !*is_string)
+                {
+                    *is_faulty = (count_arrays != 1) | (json._.len() != count_pairs);
+                    if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    count_arrays -= 1;
+                }
+                else if (*byte == VALUE_DELIMITER)
+                {
+                    count_pairs += 1;
+                    if (*expect_value & (json._.len() == (count_pairs - 1)) & (byte_prev != BACKSLASH)) { value_parsed(); }
                 }
                 else if (*byte == QUOTATION_MARK)
                 {
@@ -256,9 +275,17 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
                         { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
                     }
-                    else { *is_string = true; }
+                    else
+                    {
+                        *is_faulty = (*is_number | *is_literal);
+                        *is_string = true;
+                    }
                 }
-                else if (*byte == KEY_DELIMITER) { *expect_value = !*is_string; } // string can contain ':'
+                else if (*byte == KEY_DELIMITER) // string can contain ':'
+                {
+                    *is_faulty = (*expect_value & !*is_string);
+                    *expect_value = !*is_string;
+                }
                 else if (*expect_value & !*is_string)
                 {
                     *is_faulty = true;
@@ -319,7 +346,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
         }
     }
 
-    { json._ }
+    if (*is_faulty) { [] } else { json._ }
 }
 
 impl<SIZE_JSON> JSON<SIZE_JSON>

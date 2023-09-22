@@ -173,3 +173,66 @@ fn property_number_between_minuses()
     assert(kvp.key == [0; 1]);
     assert(kvp.value.bytes == [0; 1]);
 }
+
+#[test]
+fn property_number_single_digit_comma()
+{
+    let kvp = JSON::new("{'a' : 1,}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_colon()
+{
+    let kvp = JSON::new("{'a' : 1:}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_quote()
+{
+    let kvp = JSON::new("{'a' : 1'}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_left_brace()
+{
+    let kvp = JSON::new("{'a' : 1{}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_right_brace()
+{
+    let kvp = JSON::new("{'a' : 1}}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_left_bracket()
+{
+    let kvp = JSON::new("{'a' : 1[}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}
+
+#[test]
+fn property_number_single_digit_right_bracket()
+{
+    let kvp = JSON::new("{'a' : 1]}").get("a");
+
+    assert(kvp.key == [0; 1]);
+    assert(kvp.value.bytes == [0; 1]);
+}

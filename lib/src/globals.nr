@@ -19,9 +19,9 @@ global VALUE_DELIMITER : u8 = 0x2C; // , comma
 global QUOTATION_MARK  : u8 = 0x27; // ' single quote
 global BACKSLASH       : u8 = 0x5C; // \ reverse solidus
 
-global PLUS  = 0x2B; // +
-global MINUS = 0x2D; // -
-global ZERO  = 0x30; // 0
+global PLUS  = 0x2B;         // +
+global MINUS = 0x2D;         // -
+global ZERO  = 0x30;         // 0
 global DECIMAL_POINT = 0x2E; // .
 global DIGITS_1_9 : [u8; 9] = [ 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 ];
 global eE : [u8; 2]= [ 0x65, 0x45 ]; // e or E
@@ -33,17 +33,17 @@ global WHITESPACES : [u8; 4] =
     0x0A, // newline         (\n)
     0x0D, // carriage return (\r)
 ];
-                  // a     e     f     l     n     r     s     t     u
-global LITERALS = [ 0x61, 0x65, 0x66, 0x6c, 0x6e, 0x72, 0x73, 0x74, 0x75];
+                          //  a     e     f     l     n     r     s     t     u
+global LITERALS : [u8; 9] = [ 0x61, 0x65, 0x66, 0x6c, 0x6e, 0x72, 0x73, 0x74, 0x75];
 
-global LITERALS_NULL  = [ 0x6e, 0x75, 0x6c, 0x6c ];
-global LITERALS_TRUE  = [ 0x74, 0x72, 0x75, 0x65 ];
-global LITERALS_FALSE = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ];
+global LITERALS_NULL  : [u8; 4] = [ 0x6e, 0x75, 0x6c, 0x6c ];
+global LITERALS_TRUE  : [u8; 4] = [ 0x74, 0x72, 0x75, 0x65 ];
+global LITERALS_FALSE : [u8; 5] = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ];
 
 // value represeting 'null' for all byte arrays
 // TODO: actually -1, but can't declare it, see https://github.com/noir-lang/noir/issues/2660
 // global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
-global BYTE_NULL     : u8 = 0xff;
+global BYTE_NULL        : u8 = 0xff;
 
 global DIGIT_NULL       : Field = 10;   // value represeting 'null' for digit byte arrays
 
