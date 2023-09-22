@@ -74,8 +74,7 @@
 // DECIMAL_POINT = 0x2E; // .
 // e = [ 0x65, 0x45 ]; // e or E
 
-use crate::globals;
-use crate::convert;
+use dep::std::slice;
 
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
@@ -97,9 +96,6 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
-use dep::std::option::Option;
-use dep::std::slice;
-
 struct KeyValuePair<K, V>
 {
     key : [u8; K],
@@ -117,6 +113,12 @@ struct JSON<N>
     bytes : [u8; N]
 }
 
+// TODO: indexing (operator[]) for references of slices is broken
+struct WrappedJSON
+{
+    _ : [KeyValueSlice]
+}
+
 impl<K, V> KeyValuePair<K, V>
 {
     unconstrained fn new () -> Self
@@ -131,11 +133,6 @@ impl KeyValueSlice
     {
         KeyValueSlice { key: [], value: [] }
     }
-}
-
-struct WrappedJSON
-{
-    _ : [KeyValueSlice]
 }
 
 unconstrained fn print_bytes<N>(label : str<N>, value_bytes : [u8])
@@ -160,10 +157,10 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
     let mut found_e_minus = &mut false;
     let mut found_e_plus = &mut false;
     let mut found_e_digit = &mut false;
-    let mut found_fraction_digit = &mut false;
     let mut found_fraction = &mut false;
+    let mut found_fraction_digit = &mut false;
 
-    let mut json = &mut WrappedJSON { _ : [] }; //: &mut [KeyValueSlice] = &mut []; TODO: array indexing acces (operator[]) for references of slices
+    let mut json = &mut WrappedJSON { _ : [] };
     let mut kvp = &mut KeyValueSlice::new();
 
     let new_key_value_pair = &mut ||
@@ -196,7 +193,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
         print_bytes("value", kvp.value);
         if (!found) { json._ = json._.push_back(*kvp); }
-        {*kvp = KeyValueSlice::new(); }
+        { *kvp = KeyValueSlice::new(); }
     };
 
     let value_parsed = ||
@@ -304,7 +301,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 }
                 else if (*byte != BACKSLASH) { *is_faulty = !*is_string; }
 
-                if (!*is_faulty) // store the *byte in key or value slice
+                if (!*is_faulty) // store the byte in key or value slice
                 {
                     if      (*expect_value & (*is_string | (*byte != KEY_DELIMITER)))       { kvp.value = kvp.value.push_back(*byte); }
                     else if (*is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { kvp.key = kvp.key.push_back(*byte); }
@@ -337,19 +334,17 @@ unconstrained fn new(string : str<SIZE_JSON>) -> Self
 
 unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
 {
-    let mut kvp = KeyValuePair::new();
-
     let json = parse(self.bytes);
 
+    let mut kvp = KeyValuePair::new();
     let key_bytes = key.as_bytes();
     let mut found = false;
     for object in json
     {
         if (!found)
         {
-            found = true;
-            for j in 0..K { found &= (key_bytes[j] == object.key[j]); }
-
+            found = (object.key.len() == K);
+            if (found) { for j in 0..K { found &= (key_bytes[j] == object.key[j]); } }
             if (found)
             {
                 kvp.key = key_bytes;
