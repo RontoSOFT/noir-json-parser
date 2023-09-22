@@ -6,17 +6,6 @@ global LEFT_BRACE   : u8 = 0x7b;    // left curly brace     ({)
 global RIGHT_BRACE  : u8 = 0x7d;    // right curly brace    (})
 global SPACE        : u8 = 0x20;    // space                ( )
 
-global SMALL_t      : Field = 0x74;    // small t              (t)
-global SMALL_r      : Field = 0x72;    // small r              (r)
-global SMALL_u      : Field = 0x75;    // small u              (u)
-global SMALL_e      : Field = 0x65;    // small e              (e)
-global SMALL_f      : Field = 0x66;    // small f              (f)
-global SMALL_a      : Field = 0x61;    // small a              (a)
-global SMALL_l      : Field = 0x6C;    // small l              (l)
-global SMALL_s      : Field = 0x73;    // small s              (s)
-global ZERO         : Field = 0x30;    // 0                    (0)
-global ONE          : Field = 0x31;    // 1                    (1)
-
 // value represeting 'null' for all byte arrays
 // TODO: actually -1, but can't declare it, see https://github.com/noir-lang/noir/issues/2660
 global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
@@ -29,3 +18,8 @@ global U8_CHAR_SIZE     : Field =  3;  // max(u8)                          "255"
 global U16_CHAR_SIZE    : Field =  5;  // max(u16)                      "65'535",  5 characters
 global U32_CHAR_SIZE    : Field = 10;  // max(u32)               "4'294'967'295", 10 characters
 global U64_CHAR_SIZE    : Field = 20;  // max(u64)  "18'446'744'073'709'551'616", 20 characters
+
+global TRUE_ARRAY   : [Field;5] = [0x74,0x72,0x75,0x65,BYTE_NULL];                  // true,null
+global FALSE_ARRAY  : [Field;5] = [0x66,0x61,0x6c,0x73,0x65];                       // false
+global ONE_ARRAY    : [Field;5] = [0x31,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   // 1,null,null,null,null
+global ZERO_ARRAY   : [Field;5] = [0x30,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   // 0,null,null,null,null

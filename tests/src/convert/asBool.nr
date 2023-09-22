@@ -3,9 +3,6 @@ use dep::noir::convert;
 use dep::noir::convert::BytesBool;
 use dep::noir::parse::JSON;
 
-
-
-
 #[test]
 fn ValidInput_true_ReturnsExpectedValue()
 {
@@ -14,7 +11,6 @@ fn ValidInput_true_ReturnsExpectedValue()
     
     assert( result.valid & (result.value == true) );
 }
-
 
 #[test]
 fn ValidInput_trueInSingleQuotes_ReturnsExpectedValue()
@@ -70,7 +66,6 @@ fn ValidInput_zero_ReturnsExpectedValue()
     assert( result.valid & (result.value == false) );
 }
 
-
 fn ValidInput_zeroInSingleQuotes_ReturnsExpectedValue()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'0'}").bytesOf("isEmployed");
@@ -79,11 +74,7 @@ fn ValidInput_zeroInSingleQuotes_ReturnsExpectedValue()
     assert( result.valid & (result.value == false) );
 }
 
-
 //-----------Invalid Inputs
-
-
-
 
 #[test]
 fn InvalidInput_true_ReturnsExpectedValue()
@@ -94,7 +85,6 @@ fn InvalidInput_true_ReturnsExpectedValue()
     assert( !result.valid & (result.value == false) );
 }
 
-
 #[test]
 fn InvalidInput_false_ReturnsExpectedValue()
 {
@@ -103,8 +93,6 @@ fn InvalidInput_false_ReturnsExpectedValue()
     
     assert( !result.valid & (result.value == false) );
 }
-
-
 
 #[test]
 fn InvalidInput_one_ReturnsExpectedValue()
@@ -115,9 +103,6 @@ fn InvalidInput_one_ReturnsExpectedValue()
     assert( !result.valid & (result.value == false) );
 }
 
-
-
-
 #[test]
 fn InvalidInput_zero_ReturnsExpectedValue()
 {
@@ -126,5 +111,3 @@ fn InvalidInput_zero_ReturnsExpectedValue()
     
     assert( !result.valid & (result.value == false) );
 }
-
-
