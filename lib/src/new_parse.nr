@@ -251,12 +251,8 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 {
                     if (*is_string)
                     {
-                        if      (!*expect_value) { print_bytes("name", kvp.key); }
-                        else if (byte_prev != BACKSLASH)
-                        {
-                            kvp.value = (*kvp).value.push_back(QUOTATION_MARK);
-                            (*new_key_value_pair)();
-                        }
+                        if      (!*expect_value)         { print_bytes("name", kvp.key); }
+                        else if (byte_prev != BACKSLASH) { kvp.value = kvp.value.push_back(QUOTATION_MARK); }
 
                         { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
                     }
