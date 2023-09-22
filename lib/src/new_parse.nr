@@ -96,10 +96,12 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
+use crate::convert::StringBytes;
+
 struct KeyValuePair<K, V>
 {
     key : [u8; K],
-    value : [u8; V],
+    value : StringBytes<V>,
 }
 
 struct KeyValueSlice
@@ -123,7 +125,7 @@ impl<K, V> KeyValuePair<K, V>
 {
     unconstrained fn new () -> Self
     {
-        KeyValuePair { key: [0; K], value: [0; V] }
+        KeyValuePair { key: [0; K], value: StringBytes { valid: false, bytes: [0; V] } }
     }
 }
 
@@ -338,17 +340,16 @@ unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
 
     let mut kvp = KeyValuePair::new();
     let key_bytes = key.as_bytes();
-    let mut found = false;
     for object in json
     {
-        if (!found)
+        if (!kvp.value.valid)
         {
-            found = (object.key.len() == K);
-            if (found) { for j in 0..K { found &= (key_bytes[j] == object.key[j]); } }
-            if (found)
+            kvp.value.valid = (object.key.len() == K);
+            if (kvp.value.valid) { for i in 0..K { kvp.value.valid &= (key_bytes[i] == object.key[i]); } }
+            if (kvp.value.valid)
             {
                 kvp.key = key_bytes;
-                for j in 0..V { kvp.value[j] = object.value[j]; }
+                for i in 0..V { kvp.value.bytes[i] = object.value[i]; }
             }
         }
     }
