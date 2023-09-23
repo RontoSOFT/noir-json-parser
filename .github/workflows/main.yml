@@ -1,0 +1,34 @@
+name: Run public tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch noir-json-parser repo
+        uses: actions/checkout@v3
+
+      - name: Install nargo 0.13.0
+        run: |
+          cd ../
+          url="https://github.com/noir-lang/noir/releases/download/nightly-2023-09-23/nargo-x86_64-unknown-linux-gnu.tar.gz"
+          curl -L "$url" | tar -xz -C .
+          chmod +x nargo
+
+      - name: Fetch tests repo
+        run: |
+          cd ../
+          git clone https://github.com/rontosoft/noir-json-parser-tests.git tests
+
+      - name: Run nargo tests
+        run: |
+          cd ../
+          mv noir-json-parser lib
+          cd tests
+          ../nargo test --show-output
+          cd ../
+          mv lib noir-json-parser
