@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Fetch noir-json-parser repo
+      - name: Fe tch noir-json-parser repo
         uses: actions/checkout@v2
 
       - name: Fetch tests repo
