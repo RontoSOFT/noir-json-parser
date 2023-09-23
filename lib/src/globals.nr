@@ -19,7 +19,7 @@ global U16_CHAR_SIZE    : Field =  5;  // max(u16)                      "65'535"
 global U32_CHAR_SIZE    : Field = 10;  // max(u32)               "4'294'967'295", 10 characters
 global U64_CHAR_SIZE    : Field = 20;  // max(u64)  "18'446'744'073'709'551'616", 20 characters
 
-global TRUE_ARRAY   : [Field;5] = [0x74,0x72,0x75,0x65,BYTE_NULL];                  // true,null
-global FALSE_ARRAY  : [Field;5] = [0x66,0x61,0x6c,0x73,0x65];                       // false
-global ONE_ARRAY    : [Field;5] = [0x31,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   // 1,null,null,null,null
-global ZERO_ARRAY   : [Field;5] = [0x30,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   // 0,null,null,null,null
+global TRUE_ARRAY   : [Field; BOOL_CHAR_SIZE] = [0x74,0x72,0x75,0x65,BYTE_NULL];
+global FALSE_ARRAY  : [Field; BOOL_CHAR_SIZE] = [0x66,0x61,0x6c,0x73,0x65];   
+global ONE_ARRAY    : [Field; BOOL_CHAR_SIZE] = [0x31,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   
+global ZERO_ARRAY   : [Field; BOOL_CHAR_SIZE] = [0x30,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];

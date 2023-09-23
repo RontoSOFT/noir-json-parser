@@ -89,40 +89,20 @@ impl<N> StringBytes<N>
         PropertyValue { valid: copy.valid, value }
     }
 
-    fn compareTwoArrays(self, another_array: [Field;5]) -> bool
-    {
-        let mut duplicate_of_array : [Field;5] = [0;5];
-
-        for i in 0..globals::BOOL_CHAR_SIZE
-        {
-            duplicate_of_array[i] = self.bytes[i];
-        }
-
-        let mut return_boolean = true;
-
-        for i in 0..globals::BOOL_CHAR_SIZE
-        {
-            return_boolean &= (duplicate_of_array[i] == another_array[i]);
-        }
-        return_boolean
-    }
-    
     fn asBool(self) -> PropertyValue<bool>
     {
-        let mut isValid = false;
-        let mut value = false;
-        
-        if(self.compareTwoArrays(globals::TRUE_ARRAY) | self.compareTwoArrays(globals::ONE_ARRAY))
+        let compare_array = |other: [Field; globals::BOOL_CHAR_SIZE]| -> bool
         {
-            isValid = true;
-            value = true;
-        }
-        else if(self.compareTwoArrays(globals::FALSE_ARRAY) | self.compareTwoArrays(globals::ZERO_ARRAY))
-        {
-            isValid = true;
-            value = false;
-        }
-        
-        PropertyValue { valid: isValid, value }
+            let mut is_equal = (N == globals::BOOL_CHAR_SIZE);
+
+            if (is_equal) { for i in 0..globals::BOOL_CHAR_SIZE { is_equal &= (self.bytes[i] == other[i]); } }
+
+            is_equal
+        };
+
+        let valid = (compare_array(globals::TRUE_ARRAY) | compare_array(globals::ONE_ARRAY) | compare_array(globals::FALSE_ARRAY) | compare_array(globals::ZERO_ARRAY));
+        let value = (valid & (self.bytes[0] == globals::TRUE_ARRAY[0]) | (self.bytes[0] == globals::ONE_ARRAY[0]));
+
+        PropertyValue{valid, value}
     }
 }
