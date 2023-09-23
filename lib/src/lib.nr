@@ -1,4 +1,3 @@
-mod parse;
-mod new_parse;
 mod globals;
+mod new_parse;
 mod convert;
