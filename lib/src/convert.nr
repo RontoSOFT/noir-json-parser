@@ -3,6 +3,8 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
+use dep::std::option::Option;
+
 global BOOL_CHAR_SIZE : Field =  5;  // max(bool)                      "false",  5 characters
 global U8_CHAR_SIZE   : Field =  3;  // max(u8)                          "255",  3 characters
 global U16_CHAR_SIZE  : Field =  5;  // max(u16)                      "65'535",  5 characters
@@ -39,7 +41,7 @@ impl<N> StringBytes<N>
         StringBytes { valid: false, bytes }
     }
 
-    fn asField(self) -> PropertyValue<Field>
+    fn asField(self) -> Option<Field>
     {
         let mut value    : Field = 0;
         let mut exponent : Field = 1;
@@ -65,10 +67,10 @@ impl<N> StringBytes<N>
 
         valid &= (self.bytes[0] != BYTE_NULL);                                  // ensure at least one digit is valid
 
-        PropertyValue { valid, value }
+        if (valid) { Option::some(value) } else { Option::none() }
     }
 
-    fn asBool(self) -> PropertyValue<bool>
+    fn asBool(self) -> Option<bool>
     {
         let mut i : &mut Field = &mut -1;
         let equal_value = |a| { *i += 1; self.bytes[*i] == a };
@@ -82,6 +84,6 @@ impl<N> StringBytes<N>
         }
         else if (N == 5) { valid = LITERALS_FALSE.all(equal_value); }
 
-        PropertyValue { valid, value: (valid & (self.bytes[0] == LITERALS_TRUE[0])) }
+        if (valid) { Option::some(self.bytes[0] == LITERALS_TRUE[0]) } else { Option::none() }
     }
 }
