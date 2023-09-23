@@ -88,4 +88,21 @@ impl<N> StringBytes<N>
 
         PropertyValue { valid: copy.valid, value }
     }
+
+    fn asBool(self) -> PropertyValue<bool>
+    {
+        let compare_array = |other: [Field; globals::BOOL_CHAR_SIZE]| -> bool
+        {
+            let mut is_equal = (N == globals::BOOL_CHAR_SIZE);
+
+            if (is_equal) { for i in 0..globals::BOOL_CHAR_SIZE { is_equal &= (self.bytes[i] == other[i]); } }
+
+            is_equal
+        };
+
+        let valid = (compare_array(globals::TRUE_ARRAY) | compare_array(globals::ONE_ARRAY) | compare_array(globals::FALSE_ARRAY) | compare_array(globals::ZERO_ARRAY));
+        let value = (valid & (self.bytes[0] == globals::TRUE_ARRAY[0]) | (self.bytes[0] == globals::ONE_ARRAY[0]));
+
+        PropertyValue{valid, value}
+    }
 }
