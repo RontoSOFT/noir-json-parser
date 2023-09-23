@@ -23,10 +23,8 @@
 
 // The representation of strings is similar to conventions used in the C
 // family of programming languages, using UTF-8 encoding by default
-// It begins and ends with quotation marks, and since Noir allows ' (single quote) inside a string,
-// when parsing, will consider " character instead of '
 
-    // mark_quotation = "'" // TODO: change to " when support is updated
+    // mark_quotation = 0x22 -> "
 
 // Any character can be escaped using \ (backslash or reverse solidus)
 
