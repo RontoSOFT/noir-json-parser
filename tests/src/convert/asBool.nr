@@ -1,10 +1,8 @@
-use dep::noir::globals;
-use dep::noir::convert;
 use dep::noir::convert::BytesBool;
 use dep::noir::new_parse::JSON;
 
 #[test]
-fn ValidInput_true_ReturnsExpectedValue()
+fn property_literal_true_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':true}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -13,7 +11,7 @@ fn ValidInput_true_ReturnsExpectedValue()
 }
 
 #[test]
-fn ValidInput_trueInSingleQuotes_ReturnsExpectedValue()
+fn property_string_true_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'true'}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -22,16 +20,16 @@ fn ValidInput_trueInSingleQuotes_ReturnsExpectedValue()
 }
 
 #[test]
-fn ValidInput_one_ReturnsExpectedValue()
+fn property_literal_one_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':1}").get("isEmployed").value;
     let result = bytes.asBool();
 
-    assert( result.valid & (result.value == true) );
+    assert( !result.valid & (result.value == false) );
 }
 
 #[test]
-fn ValidInput_oneInSingleQuotes_ReturnsExpectedValue()
+fn property_string_one_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'1'}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -40,7 +38,7 @@ fn ValidInput_oneInSingleQuotes_ReturnsExpectedValue()
 }
 
 #[test]
-fn ValidInput_false_ReturnsExpectedValue()
+fn property_literal_false_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':false}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -49,7 +47,7 @@ fn ValidInput_false_ReturnsExpectedValue()
 }
 
 #[test]
-fn ValidInput_falseInSingleQuotes_ReturnsExpectedValue()
+fn property_string_false_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'false'}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -58,15 +56,15 @@ fn ValidInput_falseInSingleQuotes_ReturnsExpectedValue()
 }
 
 #[test]
-fn ValidInput_zero_ReturnsExpectedValue()
+fn property_number_zero_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':0}").get("isEmployed").value;
     let result = bytes.asBool();
 
-    assert( result.valid & (result.value == false) );
+    assert( !result.valid & (result.value == false) );
 }
 
-fn ValidInput_zeroInSingleQuotes_ReturnsExpectedValue()
+fn property_string_quote_zero_quote_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'0'}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -74,10 +72,26 @@ fn ValidInput_zeroInSingleQuotes_ReturnsExpectedValue()
     assert( !result.valid & (result.value == false) );
 }
 
-//-----------Invalid Inputs
+#[test]
+fn property_literal_null_as_bool()
+{
+    let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':null}").get("isEmployed").value;
+    let result = bytes.asBool();
+
+    assert( result.valid & (result.value == false) );
+}
 
 #[test]
-fn InvalidInput_true_ReturnsExpectedValue()
+fn property_string_null_as_bool()
+{
+    let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':'null'}").get("isEmployed").value;
+    let result = bytes.asBool();
+
+    assert( !result.valid & (result.value == false) );
+}
+
+#[test]
+fn property_literal_wrong_letter_as_bool_true()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':trye}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -86,7 +100,7 @@ fn InvalidInput_true_ReturnsExpectedValue()
 }
 
 #[test]
-fn InvalidInput_false_ReturnsExpectedValue()
+fn property_literal_wrong_letter_as_bool_false()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':falle}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -95,7 +109,16 @@ fn InvalidInput_false_ReturnsExpectedValue()
 }
 
 #[test]
-fn InvalidInput_one_ReturnsExpectedValue()
+fn property_literal_wrong_letter_as_bool_null()
+{
+    let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':nulm}").get("isEmployed").value;
+    let result = bytes.asBool();
+
+    assert( !result.valid & (result.value == false) );
+}
+
+#[test]
+fn property_number_zero_one_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':01}").get("isEmployed").value;
     let result = bytes.asBool();
@@ -104,7 +127,7 @@ fn InvalidInput_one_ReturnsExpectedValue()
 }
 
 #[test]
-fn InvalidInput_zero_ReturnsExpectedValue()
+fn property_number_three_zero_as_bool()
 {
     let bytes : BytesBool = JSON::new("{'name':'John Doe','age':30,'isEmployed':000}").get("isEmployed").value;
     let result = bytes.asBool();

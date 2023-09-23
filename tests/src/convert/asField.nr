@@ -1,56 +1,57 @@
-use dep::noir::globals;
-use dep::noir::convert;
+use dep::noir::globals::BYTE_NULL;
 use dep::noir::convert::BytesU8;
+use dep::noir::convert::StringBytes;
 use dep::noir::new_parse::JSON;
 use dep::noir::new_parse::KeyValuePair;
 
 #[test]
-fn ValidInput_StringBytes_ReturnsExpectedValue()
+fn convert_StringBytes_array_as_field()
 {
-    let bytes = convert::StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, 0x36, 0x37, 0x35, 0x31, 0x30]);
+    let bytes = StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, 0x36, 0x37, 0x35, 0x31, 0x30]);
     let result = bytes.asField();
 
     assert( result.valid & (result.value == 4293867510) );
 }
 
 #[test]
-fn ValidInput_StringBytesWithNulls_ReturnsExpectedValue()
+fn convert_StringBytes_array_with_nulls_as_field()
 {
-    let bytes = convert::StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL]);
+    let bytes = StringBytes::new_valid([0x34, 0x32, 0x39, 0x33, 0x38, BYTE_NULL, BYTE_NULL, BYTE_NULL, BYTE_NULL, BYTE_NULL]);
     let result = bytes.asField();
 
     assert( result.valid & (result.value == 42938) );
 }
 
 #[test]
-fn ValidInput_StringBytesLargerThanMaxOfFieldType_ReturnsOverflowedValue()
+fn convert_StringBytes_array_value_overflows_as_field()
 {
-    let bytes = convert::StringBytes::new_valid([0x32,0x31,0x38,0x38,0x38,0x32,0x34,0x32,0x38,0x37,0x31,0x38,0x33,0x39,0x32,0x37,0x35,0x32,0x32,0x32,0x32,0x34,0x36,0x34,0x30,0x35,0x37,0x34,0x35,0x32,0x35,0x37,0x32,0x37,0x35,0x30,0x38,0x38,0x35,0x34,0x38,0x33,0x36,0x34,0x34,0x30,0x30,0x34,0x31,0x36,0x30,0x33,0x34,0x33,0x34,0x33,0x36,0x39,0x38,0x32,0x30,0x34,0x31,0x38,0x36,0x35,0x37,0x35,0x38,0x30,0x38,0x34,0x39,0x35,0x36,0x31,0x38]);
+    // max (Field) + 1
+    let bytes = StringBytes::new_valid([0x32,0x31,0x38,0x38,0x38,0x32,0x34,0x32,0x38,0x37,0x31,0x38,0x33,0x39,0x32,0x37,0x35,0x32,0x32,0x32,0x32,0x34,0x36,0x34,0x30,0x35,0x37,0x34,0x35,0x32,0x35,0x37,0x32,0x37,0x35,0x30,0x38,0x38,0x35,0x34,0x38,0x33,0x36,0x34,0x34,0x30,0x30,0x34,0x31,0x36,0x30,0x33,0x34,0x33,0x34,0x33,0x36,0x39,0x38,0x32,0x30,0x34,0x31,0x38,0x36,0x35,0x37,0x35,0x38,0x30,0x38,0x34,0x39,0x35,0x36,0x31,0x38]);
     let result = bytes.asField();
 
     assert( result.valid & (result.value == 1) );
 }
 
 #[test]
-fn StringBytesIsFlawed_StartingNullElement_ReturnsInvalidValue()
+fn convert_StringBytes_array_with_leading_null_as_field()
 {
-    let bytes = convert::StringBytes::new_valid([globals::BYTE_NULL, 0x34, 0x39, 0x36 ]);
+    let bytes = StringBytes::new_valid([BYTE_NULL, 0x34, 0x39, 0x36 ]);
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
 }
 
 #[test]
-fn StringBytesIsFlawed_NullBetweenNonNullElements_ReturnsInvalidValue()
+fn convert_StringBytes_array_with_sparse_digits_as_field()
 {
-    let bytes = convert::StringBytes::new_valid([0x34, 0x32, globals::BYTE_NULL, 0x34, 0x39, 0x36, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL, globals::BYTE_NULL]);
+    let bytes = StringBytes::new_valid([0x34, 0x32, BYTE_NULL, 0x34, 0x39, 0x36, BYTE_NULL, BYTE_NULL, BYTE_NULL, BYTE_NULL]);
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
 }
 
 #[test]
-fn ValidInput_JSONAndPropertyName_ReturnsExpectedValue()
+fn property_number_three_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -59,7 +60,7 @@ fn ValidInput_JSONAndPropertyName_ReturnsExpectedValue()
 }
 
 #[test]
-fn JSONPropertyValueIsSingleQuoted_ReturnsInvalidValue()
+fn property_string_three_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'30','isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -71,7 +72,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsInvalidValue()
 // TODO: see https://github.com/noir-lang/noir/issues/2657
 //
 // #[test]
-// fn JSONPropertyValueIsDoubleQuoted_ReturnsValidValue()
+// fn property_string_escaped_three_zero_as_field()
 // {
 //     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':\"30\",'isEmployed':true}").get("age").value;
 //     let result = bytes.asField();
@@ -80,7 +81,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsInvalidValue()
 // }
 
 #[test]
-fn JSONPropertyValueTypeMismatch_Signed_ReturnsInvalidValue()
+fn property_number_minus_three_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':-30,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -89,7 +90,7 @@ fn JSONPropertyValueTypeMismatch_Signed_ReturnsInvalidValue()
 }
 
 #[test]
-fn JSONPropertyValueTypeMismatch_Float_ReturnsInvalidValue()
+fn property_number_three_zero_point_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30.0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -98,17 +99,16 @@ fn JSONPropertyValueTypeMismatch_Float_ReturnsInvalidValue()
 }
 
 #[test]
-fn JSONPropertyValueTypeMismatch_String_ReturnsInvalidValue()
+fn property_string_thirty_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}").get("age").value;
-    let kvp : KeyValuePair<3, 17> = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}").get("age");
     let result = bytes.asField();
-    dep::std::println(kvp);
+
     assert( !result.valid & (result.value == 0) );
 }
 
 #[test]
-fn JSONPropertyValueIsFlawed_WithColon_ReturnsInvalidValue()
+fn property_number_three_colon_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3:0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -117,7 +117,7 @@ fn JSONPropertyValueIsFlawed_WithColon_ReturnsInvalidValue()
 }
 
 #[test]
-fn JSONPropertyValueIsFlawed_WithSpace_ReturnsInvalidValue()
+fn property_number_three_space_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3 0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -126,7 +126,7 @@ fn JSONPropertyValueIsFlawed_WithSpace_ReturnsInvalidValue()
 }
 
 #[test]
-fn JSONPropertyValueIsFlawed_WithLeftBrace_ReturnsInvalidValue()
+fn property_number_three_left_brace_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3{0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -135,7 +135,16 @@ fn JSONPropertyValueIsFlawed_WithLeftBrace_ReturnsInvalidValue()
 }
 
 #[test]
-fn JSONPropertyValueIsFlawed_WithSingleQuote_AndIsParsable_ReturnsValidValue()
+fn property_number_three_right_brace_zero_as_field()
+{
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3}0,'isEmployed':true}").get("age").value;
+    let result = bytes.asField();
+
+    assert( !result.valid & (result.value == 0) );
+}
+
+#[test]
+fn property_number_three_quote_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3'0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
@@ -144,7 +153,7 @@ fn JSONPropertyValueIsFlawed_WithSingleQuote_AndIsParsable_ReturnsValidValue()
 }
 
 // #[test]
-// fn JSONPropertyValueIsFlawed_WithDoubleQuote_AndIsParsable_ReturnsValidValue()
+// fn property_number_three_escaped_quote_zero_as_field()
 // {
 //     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3\"0,'isEmployed':true}").get("age").value;
 //     let result = bytes.asField();
@@ -153,18 +162,9 @@ fn JSONPropertyValueIsFlawed_WithSingleQuote_AndIsParsable_ReturnsValidValue()
 // }
 
 #[test]
-fn JSONPropertyValueIsFlawed_WithComma_AndIsParsable_ReturnsValidValue()
+fn property_number_three_comma_zero_as_field()
 {
     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3,0,'isEmployed':true}").get("age").value;
-    let result = bytes.asField();
-
-    assert( !result.valid & (result.value == 0) );
-}
-
-#[test]
-fn JSONPropertyValueIsFlawed_WithRightBrace_AndIsParsable_ReturnsValidValue()
-{
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3}0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );

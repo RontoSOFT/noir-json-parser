@@ -1,53 +1,46 @@
-// the six structural characters
+// Six structural characters
 
-    // BEGIN_ARRAY     =  0x5B; [ left square bracket
-    // BEGIN_OBJECT    =  0x7B; { left curly bracket
-    // END_ARRAY       =  0x5D; ] right square bracket
-    // END_OBJECT      =  0x7D; } right curly bracket
-    // separator_property  =  0x3A; : colon
-    // separator_value =  0x2C; , comma
+    // BEGIN_ARRAY     =  0x5B -> [ (left square bracket)
+    // BEGIN_OBJECT    =  0x7B -> { (left curly bracket)
+    // END_ARRAY       =  0x5D -> ] (right square bracket)
+    // END_OBJECT      =  0x7D -> } (right curly bracket)
+    // KEY_DELIMITER   =  0x3A -> : (colon)
+    // VALuE_DELIMITER =  0x2C -> , (comma)
 
-// WHITESPACE is allowed before or after any of the six structural characters
+// Whitespace is allowed before or after any of the six structural characters
 
     // WHITESPACE =
     // [
-    //     0x20, // Space
-    //     0x09, // Horizontal tab
-    //     0x0A, // Line feed or New line
-    //     0x0D, // Carriage return
-    // ];
+    //     0x20, -> Space
+    //     0x09, -> Horizontal tab
+    //     0x0A, -> Line feed or New line
+    //     0x0D, -> Carriage return
+    // ]
 
-// expected possible values
+// Expected possible values ==> ( "string", literal, number, { object }, [ array ] )
 
-    // value = ( { object }, [ array ], "string", literal, number )
-
-// ==============================
-// we deduce that, while starting to parse, we will be accepting
-//  -> any WHITESPACE
-//  -> '{', or '[', or '"' (double quote)
-// ==============================
-
-// STRINGS
+// 1. STRINGS
 
 // The representation of strings is similar to conventions used in the C
 // family of programming languages, using UTF-8 encoding by default
 // It begins and ends with quotation marks, and since Noir allows ' (single quote) inside a string,
 // when parsing, will consider " character instead of '
 
-    // mark_quotation = "'";
+    // mark_quotation = "'" // TODO: change to " when support is updated
 
-// Any character can be BACKSLASHd using \ (reverse solidus)
+// Any character can be escaped using \ (backslash or reverse solidus)
 
-    // BACKSLASH = 0x2F;
+    // BACKSLASH = 0x2F
 
-// literal names MUST be lowercase, and these are the only ones allowed:
+// 2. LITERALS
 
-    // false = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ]; // false
-    // null  = [ 0x6e, 0x75, 0x6c, 0x6c        ; // null
-    // true  = [ 0x74, 0x72, 0x75, 0x65        ; // true
+// MUST be lowercase, and these are the only ones allowed:
 
+    // false = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ]
+    // null  = [ 0x6e, 0x75, 0x6c, 0x6c
+    // true  = [ 0x74, 0x72, 0x75, 0x65
 
-// NUMBERS
+// 3. NUMBERS
 
 // A number contains an integer component that may be prefixed with an optional MINUS (-) sign,
 // which may be followed by a fraction part and/or an exponent part
@@ -55,10 +48,10 @@
 // Octal forms are not allowed
 // Hex forms are not allowed
 // Leading zeros are not allowed
-// Numeric values that cannot be represented as sequences of digits (such as Infinity and NaN) are not permitted.
+// Numeric values that cannot be represented as sequences of digits (such as Infinity and NaN) are not permitted
 
 // A fraction part is a decimal point followed by one or more digits
-// An exponent part begins with the letter 'E' or 'e', which may be followed by '+' or '-' sign.
+// An exponent part begins with the letter 'E' or 'e', which may be followed by '+' or '-' sign
 // The exponent is followed by at least one digit
 
 // Template using regex:
@@ -67,12 +60,12 @@
 // frac   = decimal-point[zero|DIGIT1-9]+       -> .[zero and any digit]
 // exp    = [eE]{1}[MINUS|PLUS]?int             -> (e or E)[+ or -][0 or integral number]
 
-// PLUS  = 0x2B; // +
-// MINUS = 0x2D; // -
-// zero  = 0x30; // 0
-// DIGITS_1_9 = [ 0x31, 0x31, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 ];
-// DECIMAL_POINT = 0x2E; // .
-// e = [ 0x65, 0x45 ]; // e or E
+// PLUS  = 0x2B
+// MINUS = 0x2D
+// ZERO  = 0x30
+// DIGITS_1_9 = [ 0x31, 0x31, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 ]
+// DECIMAL_POINT = 0x2E
+// eE = [ 0x65, 0x45 ]
 
 use dep::std::slice;
 
@@ -352,37 +345,37 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 impl<SIZE_JSON> JSON<SIZE_JSON>
 {
 
-unconstrained fn new(string : str<SIZE_JSON>) -> Self
-{
-    dep::std::println("");
-    dep::std::println(string);
-    dep::std::println("");
-
-    JSON { bytes: string.as_bytes() }
-}
-
-unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
-{
-    let json = parse(self.bytes);
-
-    let mut kvp = KeyValuePair::new();
-    let key_bytes = key.as_bytes();
-    for object in json
+    unconstrained fn new(string : str<SIZE_JSON>) -> Self
     {
-        if (!kvp.value.valid)
-        {
-            kvp.value.valid = (object.key.len() == K);
-            if (kvp.value.valid) { for i in 0..K { kvp.value.valid &= (key_bytes[i] == object.key[i]); } }
-            if (kvp.value.valid)
-            {
-                kvp.key = key_bytes;
+        dep::std::println("");
+        dep::std::println(string);
+        dep::std::println("");
 
-                for i in 0..V { if (i < object.value.len() as u64) { kvp.value.bytes[i] = object.value[i]; } }
-            }
-        }
+        JSON { bytes: string.as_bytes() }
     }
 
-    kvp
-}
+    unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
+    {
+        let json = parse(self.bytes);
+
+        let mut kvp = KeyValuePair::new();
+        let key_bytes = key.as_bytes();
+        for object in json
+        {
+            if (!kvp.value.valid)
+            {
+                kvp.value.valid = (object.key.len() == K);
+                if (kvp.value.valid) { for i in 0..K { kvp.value.valid &= (key_bytes[i] == object.key[i]); } }
+                if (kvp.value.valid)
+                {
+                    kvp.key = key_bytes;
+
+                    for i in 0..V { if (i < object.value.len() as u64) { kvp.value.bytes[i] = object.value[i]; } }
+                }
+            }
+        }
+
+        kvp
+    }
 
 }
