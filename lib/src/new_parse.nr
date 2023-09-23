@@ -76,6 +76,7 @@
 
 use dep::std::slice;
 
+use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
@@ -125,7 +126,7 @@ impl<K, V> KeyValuePair<K, V>
 {
     unconstrained fn new () -> Self
     {
-        KeyValuePair { key: [0; K], value: StringBytes { valid: false, bytes: [0; V] } }
+        KeyValuePair { key: [0; K], value: StringBytes::new_invalid([BYTE_NULL; V]) }
     }
 }
 
@@ -270,8 +271,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                 {
                     if (*is_string)
                     {
-                        if      (!*expect_value)         { print_bytes("name", kvp.key); }
-                        else if (byte_prev != BACKSLASH) { kvp.value = kvp.value.push_back(QUOTATION_MARK); }
+                        if (!*expect_value) { print_bytes("name", kvp.key); }
 
                         { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
                     }
@@ -304,7 +304,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
                     else if ((*byte == ZERO) | DIGITS_1_9.any(equals_byte))
                     {
                         *is_faulty = (*found_digit_0 & !(*found_fraction | *found_e));
-                        *found_digit_0 = ((*byte == ZERO) | *found_digit_0);
+                        *found_digit_0 = ((*byte == ZERO) | *found_digit_0) & !*found_digit_1_9;
                         *found_digit_1_9 = (!*found_digit_0 | *found_digit_1_9);
                         *found_e_digit = *found_e;
                         *found_fraction_digit = *found_fraction;
@@ -376,7 +376,8 @@ unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
             if (kvp.value.valid)
             {
                 kvp.key = key_bytes;
-                for i in 0..V { kvp.value.bytes[i] = object.value[i]; }
+
+                for i in 0..V { if (i < object.value.len() as u64) { kvp.value.bytes[i] = object.value[i]; } }
             }
         }
     }

@@ -43,7 +43,7 @@ global LITERALS_FALSE : [u8; 5] = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ];
 // value represeting 'null' for all byte arrays
 // TODO: actually -1, but can't declare it, see https://github.com/noir-lang/noir/issues/2660
 // global BYTE_NULL        : Field = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000;
-global BYTE_NULL        : u8 = 0xff;
+global BYTE_NULL        : u8 = 0x00;
 
 global DIGIT_NULL       : Field = 10;   // value represeting 'null' for digit byte arrays
 
@@ -53,7 +53,7 @@ global U16_CHAR_SIZE    : Field =  5;  // max(u16)                      "65'535"
 global U32_CHAR_SIZE    : Field = 10;  // max(u32)               "4'294'967'295", 10 characters
 global U64_CHAR_SIZE    : Field = 20;  // max(u64)  "18'446'744'073'709'551'616", 20 characters
 
-global TRUE_ARRAY   : [Field; BOOL_CHAR_SIZE] = [0x74,0x72,0x75,0x65,BYTE_NULL];
-global FALSE_ARRAY  : [Field; BOOL_CHAR_SIZE] = [0x66,0x61,0x6c,0x73,0x65];   
-global ONE_ARRAY    : [Field; BOOL_CHAR_SIZE] = [0x31,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];   
-global ZERO_ARRAY   : [Field; BOOL_CHAR_SIZE] = [0x30,BYTE_NULL,BYTE_NULL,BYTE_NULL,BYTE_NULL];
+global TRUE_ARRAY   : [u8; BOOL_CHAR_SIZE] = [ 0x74, 0x72, 0x75, 0x65, BYTE_NULL ];
+global FALSE_ARRAY  : [u8; BOOL_CHAR_SIZE] = [ 0x66, 0x61, 0x6c, 0x73, 0x65 ];
+global ONE_ARRAY    : [u8; BOOL_CHAR_SIZE] = [ 0x31, BYTE_NULL, BYTE_NULL, BYTE_NULL, BYTE_NULL ];
+global ZERO_ARRAY   : [u8; BOOL_CHAR_SIZE] = [ 0x30, BYTE_NULL, BYTE_NULL, BYTE_NULL, BYTE_NULL ];
