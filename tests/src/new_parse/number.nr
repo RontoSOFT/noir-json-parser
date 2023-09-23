@@ -34,6 +34,28 @@ fn property_number_multiple_digits()
 }
 
 #[test]
+fn property_number_one_hundred()
+{
+    let (key, value) = ("a", "100");
+
+    let kvp = JSON::new("{'a' : 100}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
+fn property_number_one_thousand_one()
+{
+    let (key, value) = ("a", "1001");
+
+    let kvp = JSON::new("{'a' : 1001}").get(key);
+
+    assert(kvp.key == key.as_bytes());
+    assert(kvp.value.bytes == value.as_bytes());
+}
+
+#[test]
 fn property_number_minus_zero()
 {
     let (key, value) = ("a", "-0");

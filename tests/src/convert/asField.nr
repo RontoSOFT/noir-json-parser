@@ -1,7 +1,8 @@
 use dep::noir::globals;
 use dep::noir::convert;
 use dep::noir::convert::BytesU8;
-use dep::noir::parse::JSON;
+use dep::noir::new_parse::JSON;
+use dep::noir::new_parse::KeyValuePair;
 
 #[test]
 fn ValidInput_StringBytes_ReturnsExpectedValue()
@@ -51,19 +52,19 @@ fn StringBytesIsFlawed_NullBetweenNonNullElements_ReturnsInvalidValue()
 #[test]
 fn ValidInput_JSONAndPropertyName_ReturnsExpectedValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( result.valid & (result.value == 30) );
 }
 
 #[test]
-fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
+fn JSONPropertyValueIsSingleQuoted_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'30','isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'30','isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
-    assert( result.valid & (result.value == 30) );
+    assert( !result.valid & (result.value == 0) );
 }
 
 //
@@ -72,7 +73,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
 // #[test]
 // fn JSONPropertyValueIsDoubleQuoted_ReturnsValidValue()
 // {
-//     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':\"30\",'isEmployed':true}").bytesOf("age");
+//     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':\"30\",'isEmployed':true}").get("age").value;
 //     let result = bytes.asField();
 
 //     assert( result.valid && result.value == 30 );
@@ -81,7 +82,7 @@ fn JSONPropertyValueIsSingleQuoted_ReturnsValidValue()
 #[test]
 fn JSONPropertyValueTypeMismatch_Signed_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':-30,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':-30,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
@@ -90,7 +91,7 @@ fn JSONPropertyValueTypeMismatch_Signed_ReturnsInvalidValue()
 #[test]
 fn JSONPropertyValueTypeMismatch_Float_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30.0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':30.0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
@@ -99,16 +100,17 @@ fn JSONPropertyValueTypeMismatch_Float_ReturnsInvalidValue()
 #[test]
 fn JSONPropertyValueTypeMismatch_String_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}").get("age").value;
+    let kvp : KeyValuePair<3, 17> = JSON::new("{'name':'John Doe','age':'thirty','isEmployed':true}").get("age");
     let result = bytes.asField();
-
+    dep::std::println(kvp);
     assert( !result.valid & (result.value == 0) );
 }
 
 #[test]
 fn JSONPropertyValueIsFlawed_WithColon_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3:0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3:0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
@@ -117,7 +119,7 @@ fn JSONPropertyValueIsFlawed_WithColon_ReturnsInvalidValue()
 #[test]
 fn JSONPropertyValueIsFlawed_WithSpace_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3 0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3 0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
@@ -126,7 +128,7 @@ fn JSONPropertyValueIsFlawed_WithSpace_ReturnsInvalidValue()
 #[test]
 fn JSONPropertyValueIsFlawed_WithLeftBrace_ReturnsInvalidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3{0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3{0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
     assert( !result.valid & (result.value == 0) );
@@ -135,35 +137,35 @@ fn JSONPropertyValueIsFlawed_WithLeftBrace_ReturnsInvalidValue()
 #[test]
 fn JSONPropertyValueIsFlawed_WithSingleQuote_AndIsParsable_ReturnsValidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3'0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3'0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
-    assert( result.valid & (result.value == 3) );
+    assert( !result.valid & (result.value == 0) );
 }
 
 // #[test]
 // fn JSONPropertyValueIsFlawed_WithDoubleQuote_AndIsParsable_ReturnsValidValue()
 // {
-//     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3\"0,'isEmployed':true}").bytesOf("age");
+//     let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3\"0,'isEmployed':true}").get("age").value;
 //     let result = bytes.asField();
 
-//     assert( result.valid & (result.value == 3) );
+    // assert( !result.valid & (result.value == 0) );
 // }
 
 #[test]
 fn JSONPropertyValueIsFlawed_WithComma_AndIsParsable_ReturnsValidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3,0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3,0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
-    assert( result.valid & (result.value == 3) );
+    assert( !result.valid & (result.value == 0) );
 }
 
 #[test]
 fn JSONPropertyValueIsFlawed_WithRightBrace_AndIsParsable_ReturnsValidValue()
 {
-    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3}0,'isEmployed':true}").bytesOf("age");
+    let bytes : BytesU8 = JSON::new("{'name':'John Doe','age':3}0,'isEmployed':true}").get("age").value;
     let result = bytes.asField();
 
-    assert( result.valid & (result.value == 3) );
+    assert( !result.valid & (result.value == 0) );
 }

@@ -33,20 +33,23 @@ impl<N> StringBytes<N>
     fn transformASCIIDigits(self) -> Self
     {
         let mut copy = self;
-        let mut is_null_found = false;
+        let mut reached_end = false;
 
         for i in 0..N
         {
-            if (copy.valid)
+            if (copy.valid & !reached_end)
             {
-                copy.bytes[i] -= 0x30; // convert ASCII to digit as integer
-                if (copy.bytes[i] > 9) // clamp
+                if ((copy.bytes[i] > 0x2f) & (copy.bytes[i] < 0x3a)) { copy.bytes[i] -= 0x30; } // convert ASCII to digit as integer
+                else
                 {
-                    copy.bytes[i] = globals::BYTE_NULL;
-                    is_null_found = true;
-                }
+                    copy.valid = (copy.bytes[i] == globals::BYTE_NULL);
 
-                if (is_null_found) { copy.valid &= (copy.bytes[i] == globals::BYTE_NULL); } // ensure bytes following the first null are also null
+                    if (copy.valid)
+                    {
+                        for j in (i + 1)..N { copy.valid &= (copy.bytes[j] == globals::BYTE_NULL); }
+                        reached_end = true;
+                    }
+                }
             }
         }
 
@@ -57,31 +60,36 @@ impl<N> StringBytes<N>
 
     fn asField(self) -> PropertyValue<Field>
     {
-        let copy = self.transformASCIIDigits();
+        let mut value    : Field = 0;
+        let mut exponent : Field = 1;
+        let mut valid = true;
 
-        let mut value : Field = 0;
-
-        if (copy.valid)
+        for i in 0..N
         {
-            let mut exponent : Field = 1;
-
-            for i in 0..N
+            if (valid)
             {
                 let index : Field = (N - 1 - i); // walking property value bytes in reverse
-                if (copy.bytes[index] != globals::BYTE_NULL) // skip 'nulls'
+                if ((self.bytes[index] > 0x2f) & (self.bytes[index] < 0x3a))
                 {
-                    value += ((copy.bytes[index] as Field) * exponent);
+                    value += ((self.bytes[index] - 0x30) as Field) * exponent; // convert ASCII to digit number
                     exponent *= 10;
+                }
+                else
+                {
+                    valid = ((value == 0) & (self.bytes[index] == globals::BYTE_NULL));
+                    if (!valid) { value = 0; }
                 }
             }
         }
 
-        PropertyValue { valid: copy.valid, value }
+        valid &= (self.bytes[0] != globals::BYTE_NULL); // ensure at least one digit is valid
+
+        PropertyValue { valid, value }
     }
 
     fn asBool(self) -> PropertyValue<bool>
     {
-        let compare_array = |other: [Field; globals::BOOL_CHAR_SIZE]| -> bool
+        let compare_array = |other: [u8; globals::BOOL_CHAR_SIZE]| -> bool
         {
             let mut is_equal = (N == globals::BOOL_CHAR_SIZE);
 
