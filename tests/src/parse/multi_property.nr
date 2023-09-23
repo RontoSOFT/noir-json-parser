@@ -1,4 +1,4 @@
-use dep::noir::new_parse::JSON;
+use dep::noir::parse::JSON;
 
 #[test]
 fn two_properties_number()
@@ -76,7 +76,7 @@ unconstrained fn two_properties_same_name_replace_property_check_length()
 {
     let (key, value) = ("a", "3");
     let bytes = "{'a' : 5, 'a' : 3}".as_bytes();
-    let json = dep::noir::new_parse::parse(bytes);
+    let json = dep::noir::parse::parse(bytes);
 
     assert(json.len() == 1);
     assert(json[0].key[0] == key.as_bytes()[0]);

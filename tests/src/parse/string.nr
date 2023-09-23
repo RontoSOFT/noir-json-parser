@@ -1,4 +1,4 @@
-use dep::noir::new_parse::JSON;
+use dep::noir::parse::JSON;
 
 #[test]
 fn property_string_number_zero()
