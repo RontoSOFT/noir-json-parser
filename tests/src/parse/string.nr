@@ -47,9 +47,9 @@ fn property_string()
 #[test]
 fn property_string_with_escaped_quote()
 {
-    let (key, value) = ("a", "'a\'bc'");
+    let (key, value) = ("a", "'a\\'bc'");
 
-    let kvp = JSON::new("{'a' : 'a\'bc'}").get(key);
+    let kvp = JSON::new("{'a' : 'a\\'bc'}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value.bytes == value.as_bytes());

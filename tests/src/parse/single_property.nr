@@ -111,7 +111,7 @@ fn property_name_escaped_left_and_right()
 {
     let (key, value) = ("a", "5");
 
-    let kvp = JSON::new("{\'a\' : 5}").get(key);
+    let kvp = JSON::new("{\\'a\\' : 5}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value.bytes == value.as_bytes());
@@ -122,7 +122,7 @@ fn property_name_escaped_left()
 {
     let (key, value) = ("a", "5");
 
-    let kvp = JSON::new("{\'a' : 5}").get(key);
+    let kvp = JSON::new("{\\'a' : 5}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value.bytes == value.as_bytes());
@@ -133,7 +133,7 @@ fn property_name_escaped_right()
 {
     let (key, value) = ("a", "5");
 
-    let kvp = JSON::new("{'a\' : 5}").get(key);
+    let kvp = JSON::new("{'a\\' : 5}").get(key);
 
     assert(kvp.key == key.as_bytes());
     assert(kvp.value.bytes == value.as_bytes());

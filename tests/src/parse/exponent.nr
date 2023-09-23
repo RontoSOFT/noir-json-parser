@@ -166,7 +166,7 @@ fn property_number_escaped_zero_point_zero_e_zero()
 #[test]
 fn property_number_zero_point_zero_escaped_e_zero()
 {
-    let kvp = JSON::new("{'a' : 0.0\e0}").get("a");
+    let kvp = JSON::new("{'a' : 0.0\\e0}").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value.bytes == [0; 1]);

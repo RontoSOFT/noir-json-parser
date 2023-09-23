@@ -31,17 +31,17 @@ struct PropertyValue<T>
 
 impl<N> StringBytes<N>
 {
-    fn new_valid(bytes: [u8; N]) -> Self
+    pub fn new_valid(bytes: [u8; N]) -> Self
     {
         StringBytes { valid: true, bytes }
     }
 
-    fn new_invalid(bytes: [u8; N]) -> Self
+    pub fn new_invalid(bytes: [u8; N]) -> Self
     {
         StringBytes { valid: false, bytes }
     }
 
-    fn asField(self) -> Option<Field>
+    pub fn asField(self) -> Option<Field>
     {
         let mut value    : Field = 0;
         let mut exponent : Field = 1;
@@ -70,7 +70,7 @@ impl<N> StringBytes<N>
         if (valid) { Option::some(value) } else { Option::none() }
     }
 
-    fn asBool(self) -> Option<bool>
+    pub fn asBool(self) -> Option<bool>
     {
         let mut i : &mut Field = &mut -1;
         let equal_value = |a| { *i += 1; self.bytes[*i] == a };
