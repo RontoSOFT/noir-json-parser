@@ -3,8 +3,8 @@ use dep::std::option::Option;
 use dep::noir::globals::BYTE_NULL;
 use dep::noir::convert::BytesU8;
 use dep::noir::convert::StringBytes;
-use dep::noir::new_parse::JSON;
-use dep::noir::new_parse::KeyValuePair;
+use dep::noir::parse::JSON;
+use dep::noir::parse::KeyValuePair;
 
 #[test]
 fn convert_StringBytes_array_as_field()
