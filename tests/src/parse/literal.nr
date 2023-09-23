@@ -36,7 +36,7 @@ fn property_literal_false()
 #[test]
 fn property_literal_escaped()
 {
-    let kvp = JSON::new("{'a' : fals\e}").get("a");
+    let kvp = JSON::new("{'a' : fals\\e}").get("a");
 
     assert(kvp.key == [0; 1]);
     assert(kvp.value.bytes == [0; 1]);

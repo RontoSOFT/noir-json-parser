@@ -117,7 +117,7 @@ struct WrappedJSON
 
 impl<K, V> KeyValuePair<K, V>
 {
-    unconstrained fn new () -> Self
+    unconstrained fn new() -> Self
     {
         KeyValuePair { key: [0; K], value: StringBytes::new_invalid([BYTE_NULL; V]) }
     }
@@ -139,7 +139,7 @@ unconstrained fn print_bytes<N>(label : str<N>, value_bytes : [u8])
     dep::std::println("}");
 }
 
-unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
+unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 {
     let mut is_faulty = &mut false;
     let mut is_string = &mut false;
@@ -344,8 +344,7 @@ unconstrained fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
 
 impl<SIZE_JSON> JSON<SIZE_JSON>
 {
-
-    unconstrained fn new(string : str<SIZE_JSON>) -> Self
+    unconstrained pub fn new(string : str<SIZE_JSON>) -> Self
     {
         dep::std::println("");
         dep::std::println(string);
@@ -354,7 +353,7 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
         JSON { bytes: string.as_bytes() }
     }
 
-    unconstrained fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
+    unconstrained pub fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
     {
         let json = parse(self.bytes);
 
