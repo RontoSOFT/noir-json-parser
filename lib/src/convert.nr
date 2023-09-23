@@ -30,34 +30,6 @@ impl<N> StringBytes<N>
         StringBytes { valid: false, bytes }
     }
 
-    fn transformASCIIDigits(self) -> Self
-    {
-        let mut copy = self;
-        let mut reached_end = false;
-
-        for i in 0..N
-        {
-            if (copy.valid & !reached_end)
-            {
-                if ((copy.bytes[i] > 0x2f) & (copy.bytes[i] < 0x3a)) { copy.bytes[i] -= 0x30; } // convert ASCII to digit as integer
-                else
-                {
-                    copy.valid = (copy.bytes[i] == globals::BYTE_NULL);
-
-                    if (copy.valid)
-                    {
-                        for j in (i + 1)..N { copy.valid &= (copy.bytes[j] == globals::BYTE_NULL); }
-                        reached_end = true;
-                    }
-                }
-            }
-        }
-
-        copy.valid &= (copy.bytes[0] != globals::BYTE_NULL); // ensure at least one digit is valid
-
-        copy
-    }
-
     fn asField(self) -> PropertyValue<Field>
     {
         let mut value    : Field = 0;
