@@ -194,7 +194,12 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
     {
         *is_faulty = (kvp.value.len() == 0);
 
-        if      (*is_number) { *is_faulty = ((*found_e & !*found_e_digit) | (*found_fraction & !*found_fraction_digit)); }
+        if      (*is_number)
+        {
+            *is_faulty  = (*found_e & !*found_e_digit);
+            *is_faulty |= (*found_fraction & !*found_fraction_digit);
+            *is_faulty |= (*found_minus & !(*found_digit_0 | *found_digit_1_9));
+        }
         else if (*is_literal)
         {
             let mut i : &mut Field = &mut -1;
