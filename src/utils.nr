@@ -16,3 +16,9 @@ unconstrained pub fn print_bytes<N>(label : str<N>, bytes : [u8])
     for j in 0..bytes.len() { let s = chars[bytes[j] - 32]; dep::std::println(f"    {s}"); }
     dep::std::println("}");
 }
+
+// converting negative Field or unsinged type values to signed integer
+// value is first truncated to fit an unsiged 126 bit value
+// then cast to a signed 127 bit value
+unconstrained pub fn int127FromUnsigned(x: u126) -> i127 { x as i127 }
+unconstrained pub fn int127FromField(x: Field) -> i127 { (x as u126) as i127 }
