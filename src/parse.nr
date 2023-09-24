@@ -90,6 +90,8 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
+use crate::utils::print_bytes;
+
 use crate::convert::StringBytes;
 
 struct KeyValuePair<K, V>
@@ -119,7 +121,7 @@ impl<K, V> KeyValuePair<K, V>
 {
     unconstrained fn new() -> Self
     {
-        KeyValuePair { key: [0; K], value: StringBytes::new_invalid([BYTE_NULL; V]) }
+        KeyValuePair { key: [BYTE_NULL; K], value: StringBytes::new_invalid([BYTE_NULL; V]) }
     }
 }
 
@@ -129,14 +131,9 @@ impl KeyValueSlice
     {
         KeyValueSlice { key: [], value: [] }
     }
-}
 
-unconstrained fn print_bytes<N>(label : str<N>, value_bytes : [u8])
-{
-    dep::std::println(label);
-    dep::std::println("{");
-    for j in 0..value_bytes.len() { dep::std::println(value_bytes[j]); }
-    dep::std::println("}");
+    unconstrained fn print_key(&mut self)   { print_bytes("key", self.key); }
+    unconstrained fn print_value(&mut self) { print_bytes("value", self.value); }
 }
 
 unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
@@ -376,5 +373,4 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
 
         kvp
     }
-
 }
