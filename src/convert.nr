@@ -4,6 +4,8 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
+use crate::utils::int127FromField;
+
 use dep::std::option::Option;
 
 global BOOL_CHAR_SIZE : Field =  5;  // max(bool)                      "false",  5 characters
@@ -53,45 +55,21 @@ impl<N> StringBytes<N>
         if (valid) { Option::some(self.bytes[0] == LITERALS_TRUE[0]) } else { Option::none() }
     }
 
-    pub fn asInteger(self) -> Option<i127>
+    fn asField(self) -> Option<Field>
     {
-        let mut value    : Field = 0;
-        let mut exponent : Field = 1;
-        let mut valid = true;
-
-        for i in 0..N
+        let mut valid =                                                         // ensure at least one digit is valid
+        if (N == 1)
         {
-            if (valid)
-            {
-                let index : Field = (N - 1 - i);                                // walking property value bytes in reverse
-                if ((self.bytes[index] > 0x2f) & (self.bytes[index] < 0x3a))
-                {
-                    value += ((self.bytes[index] - 0x30) as Field) * exponent;  // convert ASCII byte to integer digit number
-                    exponent *= 10;
-                }
-                else
-                {
-                    valid = ((value == 0) & (self.bytes[index] == BYTE_NULL)); // nulls accepted only at the end of array
-                    valid |= ((index == 0) & (self.bytes[index] == MINUS));    // minus accepted only at the start of the array
-                    if (!valid) { value = 0; }
-                }
-            }
+            (self.bytes[0] != BYTE_NULL) & (self.bytes[0] != MINUS)
         }
+        else if (N != 0)
+        {
+            (self.bytes[0] != BYTE_NULL) | ((self.bytes[0] == MINUS) & (self.bytes[1] != BYTE_NULL))
+        }
+        else { false };
 
-        valid &= (self.bytes[0] != BYTE_NULL);                                  // ensure at least one digit is valid
-
-        // TODO: Crash when value == 0 and casting to u127 -- dep::std::println(value as u127);
-        let value_i = if (self.bytes[0] == MINUS) { (-value as u126) } else { (value as u126) } as i127;
-
-        if (valid) { Option::some(value_i) } else { Option::none() }
-    }
-
-    pub fn asField(self) -> Option<Field>
-    {
         let mut value    : Field = 0;
         let mut exponent : Field = 1;
-        let mut valid = true;
-
         for i in 0..N
         {
             if (valid)
@@ -105,13 +83,33 @@ impl<N> StringBytes<N>
                 else
                 {
                     valid = ((value == 0) & (self.bytes[index] == BYTE_NULL));  // nulls accepted only at the end of array
+                    valid |= ((index == 0) & (self.bytes[index] == MINUS));     // minus accepted only at the start of the array
                     if (!valid) { value = 0; }
                 }
             }
         }
 
-        valid &= (self.bytes[0] != BYTE_NULL);                                  // ensure at least one digit is valid
+        if (self.bytes[0] == MINUS) { value = -value; }
 
         if (valid) { Option::some(value) } else { Option::none() }
+    }
+
+    pub fn asInteger(self) -> Option<i127>
+    {
+        let value = self.asField();
+
+        if (value.is_some())
+        {
+            let value_field = value.unwrap_unchecked();
+            let value_i127 =
+            if (self.bytes[0] == MINUS) { (-(-value_field) as u126) as i127}
+            else                        { int127FromField(value_field) };
+                                     // { -int127FromUnsigned((-value_field) as u126)} // works
+                                     // { (-int127FromField(-value_field) as u126) as i127 } // works
+                                     // { -int127FromField(-value_field) } // TODO: this line fails
+
+            { Option::some(value_i127) }
+        }
+        else { Option::none() }
     }
 }
