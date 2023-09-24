@@ -111,12 +111,6 @@ struct JSON<N>
     bytes : [u8; N]
 }
 
-// TODO: indexing (operator[]) for references of slices is broken
-struct WrappedJSON
-{
-    _ : [KeyValueSlice]
-}
-
 impl<K, V> KeyValuePair<K, V>
 {
     unconstrained fn new() -> Self
@@ -157,7 +151,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
     let mut count_objects = 0;
     let mut count_arrays = 0;
 
-    let mut json = &mut WrappedJSON { _ : [] };
+    let mut json : &mut [ KeyValueSlice ] = &mut [];
     let mut kvp = &mut KeyValueSlice::new();
 
     let new_key_value_pair = &mut ||
@@ -177,19 +171,22 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
         *found_fraction = false;
 
         let mut found = false;
-        for i in 0..json._.len()
+        // TODO: indexing (operator[]) for references of slices is broken
+        let mut _json : [ KeyValueSlice ] = *json;
+        for i in 0.._json.len()
         {
-            let kvp_prev = json._[i];
+            let kvp_prev = _json[i];
             if (!found)
             {
                 found = (kvp.key.len() == kvp_prev.key.len());
                 if (found) { for j in 0..kvp.key.len() { found &= (kvp.key[j] == kvp_prev.key[j]); } }
-                if (found) { json._[i].value = kvp.value; }
+                if (found) { _json[i].value = kvp.value; }
             }
         }
+        { *json = _json; }
 
-        print_bytes("value", kvp.value);
-        if (!found) { json._ = json._.push_back(*kvp); }
+        kvp.print_value();
+        if (!found) { *json = (*json).push_back(*kvp); }
         { *kvp = KeyValueSlice::new(); }
     };
 
@@ -237,7 +234,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                 }
                 else if ((*byte == END_OBJECT) & !*is_string)
                 {
-                    *is_faulty = (count_objects != 1) | (json._.len() != count_pairs);
+                    *is_faulty = (count_objects != 1) | (json.len() != count_pairs);
                     if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
                     count_objects -= 1;
                 }
@@ -248,20 +245,20 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                 }
                 else if ((*byte == END_ARRAY) & !*is_string)
                 {
-                    *is_faulty = (count_arrays != 1) | (json._.len() != count_pairs);
+                    *is_faulty = (count_arrays != 1) | (json.len() != count_pairs);
                     if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
                     count_arrays -= 1;
                 }
                 else if (*byte == VALUE_DELIMITER)
                 {
                     count_pairs += 1;
-                    if (*expect_value & (json._.len() == (count_pairs - 1)) & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    if (*expect_value & (json.len() == (count_pairs - 1)) & (byte_prev != BACKSLASH)) { value_parsed(); }
                 }
                 else if (*byte == QUOTATION_MARK)
                 {
                     if (*is_string)
                     {
-                        if (!*expect_value) { print_bytes("name", kvp.key); }
+                        if (!*expect_value) { kvp.print_key(); }
 
                         { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
                     }
@@ -336,7 +333,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
         }
     }
 
-    if (*is_faulty) { [] } else { json._ }
+    if (*is_faulty) { [] } else { *json }
 }
 
 impl<SIZE_JSON> JSON<SIZE_JSON>
