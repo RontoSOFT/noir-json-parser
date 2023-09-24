@@ -24,12 +24,6 @@ struct StringBytes<N>
     bytes: [u8; N]
 }
 
-struct PropertyValue<T>
-{
-    valid: bool,
-    value: T
-}
-
 impl<N> StringBytes<N>
 {
     pub fn new_valid(bytes: [u8; N]) -> Self
