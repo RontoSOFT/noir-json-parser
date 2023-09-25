@@ -126,8 +126,11 @@ impl KeyValueSlice
         KeyValueSlice { key: [], value: [] }
     }
 
-    unconstrained fn print_key(&mut self)   { print_bytes("key", self.key); }
-    unconstrained fn print_value(&mut self) { print_bytes("value", self.value); }
+    unconstrained fn print(&mut self)
+    {
+        print_bytes("key", self.key);
+        print_bytes("value", self.value);
+    }
 }
 
 unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
@@ -186,7 +189,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
         }
         { *json = _json; }
 
-        kvp.print_value();
+        kvp.print();
 
         if (!found) { *json = (*json).push_back(*kvp); }
         { *kvp = KeyValueSlice::new(); }
@@ -323,11 +326,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                     }
                     else { *is_faulty = (*byte != BACKSLASH); }
                 }
-                else if (*byte == QUOTATION_MARK)
-                {
-                    if (!*expect_value) { kvp.print_key(); }
-                    { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
-                }
+                else { *is_string = (*byte != QUOTATION_MARK) | (*expect_value & (byte_prev == BACKSLASH)); }
 
                 if (!*is_faulty) // store the byte in key or value slice
                 {
