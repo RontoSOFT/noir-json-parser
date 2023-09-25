@@ -94,36 +94,36 @@ use crate::utils::print_bytes;
 
 use crate::convert::StringBytes;
 
-struct KeyValuePair<K, V>
+struct Property<KEY_SIZE, VALUE_SIZE>
 {
-    key : [u8; K],
-    value : StringBytes<V>,
+    key : [u8; KEY_SIZE],
+    value : StringBytes<VALUE_SIZE>,
 }
 
-struct KeyValueSlice
+struct UnconstrainedProperty
 {
     key : [u8],
     value : [u8],
 }
 
-struct JSON<N>
+struct JSON<SIZE>
 {
-    bytes : [u8; N]
+    bytes : [u8; SIZE]
 }
 
-impl<K, V> KeyValuePair<K, V>
+impl<KEY_SIZE, VALUE_SIZE> Property<KEY_SIZE, VALUE_SIZE>
 {
     unconstrained fn new() -> Self
     {
-        KeyValuePair { key: [BYTE_NULL; K], value: StringBytes::new_invalid([BYTE_NULL; V]) }
+        Property { key: [BYTE_NULL; KEY_SIZE], value: StringBytes::new_invalid([BYTE_NULL; VALUE_SIZE]) }
     }
 }
 
-impl KeyValueSlice
+impl UnconstrainedProperty
 {
-    unconstrained fn new () -> Self
+    unconstrained fn new() -> Self
     {
-        KeyValueSlice { key: [], value: [] }
+        UnconstrainedProperty { key: [], value: [] }
     }
 
     unconstrained fn print(&mut self)
@@ -133,7 +133,7 @@ impl KeyValueSlice
     }
 }
 
-unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice]
+unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [UnconstrainedProperty]
 {
     let mut is_faulty = &mut false;
     let mut is_string = &mut false;
@@ -155,8 +155,8 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
     let mut count_objects = 0;
     let mut count_arrays = 0;
 
-    let mut json : &mut [ KeyValueSlice ] = &mut [];
-    let mut kvp = &mut KeyValueSlice::new();
+    let mut json : &mut [ UnconstrainedProperty ] = &mut [];
+    let mut prop = &mut UnconstrainedProperty::new();
 
     let new_key_value_pair = &mut ||
     {
@@ -176,29 +176,30 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
 
         let mut found = false;
         // TODO: indexing (operator[]) for references of slices is broken
-        let mut _json : [ KeyValueSlice ] = *json;
+        let mut _json : [ UnconstrainedProperty ] = *json;
         for i in 0.._json.len()
         {
-            let kvp_prev = _json[i];
+            let current = _json[i];
+
             if (!found)
             {
-                found = (kvp.key.len() == kvp_prev.key.len());
-                if (found) { for j in 0..kvp.key.len() { found &= (kvp.key[j] == kvp_prev.key[j]); } }
-                if (found) { _json[i].value = kvp.value; }
+                found = (prop.key.len() == current.key.len());
+                if (found) { for j in 0..prop.key.len() { found &= (prop.key[j] == current.key[j]); } }
+                if (found) { _json[i].value = prop.value; }
             }
         }
         { *json = _json; }
 
-        kvp.print();
+        prop.print();
 
-        if (!found) { *json = (*json).push_back(*kvp); }
-        { *kvp = KeyValueSlice::new(); }
+        if (!found) { *json = (*json).push_back(*prop); }
+        { *prop = UnconstrainedProperty::new(); }
         { *count_pairs += 1; }
     };
 
     let value_parsed = ||
     {
-        *is_faulty = (kvp.value.len() == 0);
+        *is_faulty = (prop.value.len() == 0);
 
         if      (*is_number)
         {
@@ -209,16 +210,16 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
         else if (*is_literal)
         {
             let mut i : &mut Field = &mut -1;
-            let equal_value = |a| { *i += 1; kvp.value[*i] == a };
+            let equal_value = |a| { *i += 1; prop.value[*i] == a };
 
             *is_faulty = true;
 
-            if (kvp.value.len() == 4)
+            if (prop.value.len() == 4)
             {
-                if      (kvp.value[0] == LITERALS_NULL[0]) { *is_faulty = !LITERALS_NULL.all(equal_value); }
-                else if (kvp.value[0] == LITERALS_TRUE[0]) { *is_faulty = !LITERALS_TRUE.all(equal_value); }
+                if      (prop.value[0] == LITERALS_NULL[0]) { *is_faulty = !LITERALS_NULL.all(equal_value); }
+                else if (prop.value[0] == LITERALS_TRUE[0]) { *is_faulty = !LITERALS_TRUE.all(equal_value); }
             }
-            else if ((kvp.value.len() == 5) & (kvp.value[0] == LITERALS_FALSE[0])) { *is_faulty = !LITERALS_FALSE.all(equal_value); }
+            else if ((prop.value.len() == 5) & (prop.value[0] == LITERALS_FALSE[0])) { *is_faulty = !LITERALS_FALSE.all(equal_value); }
         }
 
         if (!*is_faulty) { (*new_key_value_pair)(); }
@@ -248,10 +249,10 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                     else if (*byte == END_OBJECT)
                     {
                         *is_faulty  = (count_objects != 1);
-                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
-                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (prop.value.len() == 0));
+                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (prop.value.len() != 0));
 
-                        if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+                        if (!*is_faulty & (byte_prev != BACKSLASH) & (prop.value.len() != 0)) { value_parsed(); }
 
                         count_objects -= 1;
                     }
@@ -263,10 +264,10 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                     else if (*byte == END_ARRAY)
                     {
                         *is_faulty  = (count_objects != 1);
-                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
-                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (prop.value.len() == 0));
+                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (prop.value.len() != 0));
 
-                        if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+                        if (!*is_faulty & (byte_prev != BACKSLASH) & (prop.value.len() != 0)) { value_parsed(); }
 
                         count_arrays -= 1;
                     }
@@ -284,7 +285,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                     else if (*byte == VALUE_DELIMITER)
                     {
                         *is_faulty = (!*expect_value | !*is_string);
-                        if (*expect_value & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+                        if (*expect_value & (byte_prev != BACKSLASH) & (prop.value.len() != 0)) { value_parsed(); }
                     }
                     else if (*expect_value)
                     {
@@ -330,16 +331,16 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
 
                 if (!*is_faulty) // store the byte in key or value slice
                 {
-                    if      (*expect_value & (*is_string | (*byte != KEY_DELIMITER)))       { kvp.value = kvp.value.push_back(*byte); }
-                    else if (*is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { kvp.key = kvp.key.push_back(*byte); }
+                    if      (*expect_value & (*is_string | (*byte != KEY_DELIMITER)))       { prop.value = prop.value.push_back(*byte); }
+                    else if (*is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { prop.key = prop.key.push_back(*byte); }
                 }
             }
             else if (*is_string)
             {
-                if (*expect_value) { kvp.value = kvp.value.push_back(*byte); }
-                else               { kvp.key = kvp.key.push_back(*byte); }
+                if (*expect_value) { prop.value = prop.value.push_back(*byte); }
+                else               { prop.key = prop.key.push_back(*byte); }
             }
-            else if (kvp.value.len() != 0)
+            else if (prop.value.len() != 0)
             {
                 count_key_delimiters += 1;  // to stop end_object/array from detecting a false error
                 value_parsed();
@@ -366,27 +367,27 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
         JSON { bytes: string.as_bytes() }
     }
 
-    unconstrained pub fn get<K, V>(self, key : str<K>) -> KeyValuePair<K, V>
+    unconstrained pub fn get<KEY_SIZE, VALUE_SIZE>(self, key : str<KEY_SIZE>) -> Property<KEY_SIZE, VALUE_SIZE>
     {
         let json = parse(self.bytes);
 
-        let mut kvp = KeyValuePair::new();
+        let mut prop = Property::new();
         let key_bytes = key.as_bytes();
         for object in json
         {
-            if (!kvp.value.valid)
+            if (!prop.value.valid)
             {
-                kvp.value.valid = (object.key.len() == K);
-                if (kvp.value.valid) { for i in 0..K { kvp.value.valid &= (key_bytes[i] == object.key[i]); } }
-                if (kvp.value.valid)
+                prop.value.valid = (object.key.len() == KEY_SIZE);
+                if (prop.value.valid) { for i in 0..KEY_SIZE { prop.value.valid &= (key_bytes[i] == object.key[i]); } }
+                if (prop.value.valid)
                 {
-                    kvp.key = key_bytes;
+                    prop.key = key_bytes;
 
-                    for i in 0..V { if (i < object.value.len() as u64) { kvp.value.bytes[i] = object.value[i]; } }
+                    for i in 0..VALUE_SIZE { if (i < object.value.len() as u64) { prop.value.bytes[i] = object.value[i]; } }
                 }
             }
         }
 
-        kvp
+        prop
     }
 }
