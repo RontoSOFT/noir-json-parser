@@ -30,15 +30,8 @@ unconstrained pub fn asBool<N>(bytes: [u8; N]) -> Option<bool>
 unconstrained pub fn asField<N>(bytes: [u8; N]) -> Option<Field>
 {
     let mut valid = // ensure at least one digit is valid
-    if (N == 1)
-    {
-        (bytes[0] != BYTE_NULL) & (bytes[0] != MINUS)
-    }
-    else if (N != 0)
-    {
-        (bytes[0] != BYTE_NULL) | ((bytes[0] == MINUS) & (bytes[1] != BYTE_NULL))
-    }
-    else { false };
+    if (N == 1) { (bytes[0] != BYTE_NULL) & (bytes[0] != MINUS) & (bytes[0] != PLUS) }
+    else        { ((bytes[0] != BYTE_NULL) & (bytes[0] != PLUS)) | ((bytes[0] == MINUS) & (bytes[1] != BYTE_NULL) & (bytes[1] != PLUS)) };
 
     let mut value    : Field = 0;
     let mut units    : Field = 1;
@@ -110,10 +103,10 @@ unconstrained pub fn asInteger<N>(bytes: [u8; N]) -> Option<i127>
         let value_field = value.unwrap_unchecked();
         let value_i127 =
         if (bytes[0] == MINUS) { (-(-value_field) as u126) as i127}
-        else                        { int127FromField(value_field) };
-                                    // { -int127FromUnsigned((-value_field) as u126)} // works
-                                    // { (-int127FromField(-value_field) as u126) as i127 } // works
-                                    // { -int127FromField(-value_field) } // TODO: this line fails
+        else                   { int127FromField(value_field) };
+                               // { -int127FromUnsigned((-value_field) as u126)} // works
+                               // { (-int127FromField(-value_field) as u126) as i127 } // works
+                               // { -int127FromField(-value_field) } // TODO: this line fails
 
         { Option::some(value_i127) }
     }
