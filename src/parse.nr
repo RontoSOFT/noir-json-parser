@@ -235,100 +235,99 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
 
             if (!WHITESPACES.any(equals_byte))
             {
-                if      ((*byte == BEGIN_OBJECT) & !*is_string)
+                if (!*is_string)
                 {
-                    *is_faulty = (count_objects != 0) | *is_number | *is_literal;
-                    count_objects += 1;
-                }
-                else if ((*byte == END_OBJECT) & !*is_string)
-                {
-                    *is_faulty  = (count_objects != 1);
-                    *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
-                    *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
-
-                    if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
-
-                    count_objects -= 1;
-                }
-                else if ((*byte == BEGIN_ARRAY) & !*is_string)
-                {
-                    *is_faulty = (count_arrays != 0) | *is_number | *is_literal | !*expect_value;
-                    count_arrays += 1;
-                }
-                else if ((*byte == END_ARRAY) & !*is_string)
-                {
-                    *is_faulty  = (count_objects != 1);
-                    *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
-                    *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
-
-                    if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
-
-                    count_arrays -= 1;
-                }
-                else if (*byte == QUOTATION_MARK)
-                {
-                    if (*is_string)
+                    if      (*byte == BEGIN_OBJECT)
                     {
-                        if (!*expect_value) { kvp.print_key(); }
-
-                        { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
+                        *is_faulty = (count_objects != 0) | *is_number | *is_literal;
+                        count_objects += 1;
                     }
-                    else
+                    else if (*byte == END_OBJECT)
+                    {
+                        *is_faulty  = (count_objects != 1);
+                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
+                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+
+                        if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+
+                        count_objects -= 1;
+                    }
+                    else if (*byte == BEGIN_ARRAY)
+                    {
+                        *is_faulty = (count_arrays != 0) | *is_number | *is_literal | !*expect_value;
+                        count_arrays += 1;
+                    }
+                    else if (*byte == END_ARRAY)
+                    {
+                        *is_faulty  = (count_objects != 1);
+                        *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
+                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+
+                        if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+
+                        count_arrays -= 1;
+                    }
+                    else if (*byte == QUOTATION_MARK)
                     {
                         *is_faulty = (*is_number | *is_literal);
                         *is_string = true;
                     }
-                }
-                else if ((*byte == KEY_DELIMITER) & !*is_string) // string can contain ':'
-                {
-                    *is_faulty = *expect_value;
-                    *expect_value = true;
-                    if (*expect_value) { count_key_delimiters += 1; }
-                }
-                else if ((*byte == VALUE_DELIMITER) & !*is_string)
-                {
-                    *is_faulty = (!*expect_value | !*is_string);
-                    if (*expect_value & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
-                }
-                else if (*expect_value & !*is_string)
-                {
-                    *is_faulty = true;
+                    else if (*byte == KEY_DELIMITER) // string can contain ':'
+                    {
+                        *is_faulty = *expect_value;
+                        *expect_value = true;
+                        if (*expect_value) { count_key_delimiters += 1; }
+                    }
+                    else if (*byte == VALUE_DELIMITER)
+                    {
+                        *is_faulty = (!*expect_value | !*is_string);
+                        if (*expect_value & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+                    }
+                    else if (*expect_value)
+                    {
+                        *is_faulty = true;
 
-                    if (*byte == MINUS)
-                    {
-                        *is_faulty = (*found_e_minus | *found_e_digit | (!*found_e & (*found_minus | *found_digit_0 | *found_digit_1_9)));
-                        *found_minus = true;
-                        *found_e_minus = *found_e;
-                    }
-                    else if (*byte == PLUS)
-                    {
-                        *is_faulty = *found_e_plus | (!*found_e | (*found_e & *found_e_digit));
-                        *found_e_plus = true;
-                    }
-                    else if ((*byte == ZERO) | DIGITS_1_9.any(equals_byte))
-                    {
-                        *is_faulty = (*found_digit_0 & !(*found_fraction | *found_e));
-                        *found_digit_0 = ((*byte == ZERO) | *found_digit_0) & !*found_digit_1_9;
-                        *found_digit_1_9 = (!*found_digit_0 | *found_digit_1_9);
-                        *found_e_digit = *found_e;
-                        *found_fraction_digit = *found_fraction;
-                    }
-                    else if (*byte == DECIMAL_POINT)
-                    {
-                        *is_faulty = !(*found_digit_0 | *found_digit_1_9);
-                        *found_fraction = true;
-                    }
-                    else if (eE.any(equals_byte) & !*is_literal)
-                    {
-                        *is_faulty = (*found_e | (*found_fraction & !*found_fraction_digit));
-                        *found_e = true;
-                    }
-                    else { *is_literal = (LITERALS.any(equals_byte) & !*found_digit_0 & !*found_digit_1_9); }
+                        if (*byte == MINUS)
+                        {
+                            *is_faulty = (*found_e_minus | *found_e_digit | (!*found_e & (*found_minus | *found_digit_0 | *found_digit_1_9)));
+                            *found_minus = true;
+                            *found_e_minus = *found_e;
+                        }
+                        else if (*byte == PLUS)
+                        {
+                            *is_faulty = *found_e_plus | (!*found_e | (*found_e & *found_e_digit));
+                            *found_e_plus = true;
+                        }
+                        else if ((*byte == ZERO) | DIGITS_1_9.any(equals_byte))
+                        {
+                            *is_faulty = (*found_digit_0 & !(*found_fraction | *found_e));
+                            *found_digit_0 = ((*byte == ZERO) | *found_digit_0) & !*found_digit_1_9;
+                            *found_digit_1_9 = (!*found_digit_0 | *found_digit_1_9);
+                            *found_e_digit = *found_e;
+                            *found_fraction_digit = *found_fraction;
+                        }
+                        else if (*byte == DECIMAL_POINT)
+                        {
+                            *is_faulty = !(*found_digit_0 | *found_digit_1_9);
+                            *found_fraction = true;
+                        }
+                        else if (eE.any(equals_byte) & !*is_literal)
+                        {
+                            *is_faulty = (*found_e | (*found_fraction & !*found_fraction_digit));
+                            *found_e = true;
+                        }
+                        else { *is_literal = (LITERALS.any(equals_byte) & !*found_digit_0 & !*found_digit_1_9); }
 
-                    { *is_number = !(*is_faulty | *is_literal); }
-                    { *is_faulty = !(*is_number | *is_literal); }
+                        { *is_number = !(*is_faulty | *is_literal); }
+                        { *is_faulty = !(*is_number | *is_literal); }
+                    }
+                    else { *is_faulty = (*byte != BACKSLASH); }
                 }
-                else if (*byte != BACKSLASH) { *is_faulty = !*is_string; }
+                else if (*byte == QUOTATION_MARK)
+                {
+                    if (!*expect_value) { kvp.print_key(); }
+                    { *is_string = (*expect_value & (byte_prev == BACKSLASH)); }
+                }
 
                 if (!*is_faulty) // store the byte in key or value slice
                 {
