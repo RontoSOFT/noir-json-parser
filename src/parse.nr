@@ -147,7 +147,8 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
     let mut found_fraction = &mut false;
     let mut found_fraction_digit = &mut false;
 
-    let mut count_pairs = 0;
+    let mut count_pairs = &mut 0;
+    let mut count_key_delimiters = 0;
     let mut count_objects = 0;
     let mut count_arrays = 0;
 
@@ -186,8 +187,10 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
         { *json = _json; }
 
         kvp.print_value();
+
         if (!found) { *json = (*json).push_back(*kvp); }
         { *kvp = KeyValueSlice::new(); }
+        { *count_pairs += 1; }
     };
 
     let value_parsed = ||
@@ -239,8 +242,12 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                 }
                 else if ((*byte == END_OBJECT) & !*is_string)
                 {
-                    *is_faulty = (count_objects != 1) | (json.len() != count_pairs);
-                    if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    *is_faulty  = (count_objects != 1);
+                    *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
+                    *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+
+                    if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+
                     count_objects -= 1;
                 }
                 else if ((*byte == BEGIN_ARRAY) & !*is_string)
@@ -250,14 +257,13 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                 }
                 else if ((*byte == END_ARRAY) & !*is_string)
                 {
-                    *is_faulty = (count_arrays != 1) | (json.len() != count_pairs);
-                    if (!*is_faulty & (byte_prev != BACKSLASH)) { value_parsed(); }
+                    *is_faulty  = (count_objects != 1);
+                    *is_faulty |= ((*count_pairs == count_key_delimiters) & (kvp.value.len() == 0));
+                    *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & (kvp.value.len() != 0));
+
+                    if (!*is_faulty & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
+
                     count_arrays -= 1;
-                }
-                else if (*byte == VALUE_DELIMITER)
-                {
-                    count_pairs += 1;
-                    if (*expect_value & (json.len() == (count_pairs - 1)) & (byte_prev != BACKSLASH)) { value_parsed(); }
                 }
                 else if (*byte == QUOTATION_MARK)
                 {
@@ -273,10 +279,16 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                         *is_string = true;
                     }
                 }
-                else if (*byte == KEY_DELIMITER) // string can contain ':'
+                else if ((*byte == KEY_DELIMITER) & !*is_string) // string can contain ':'
                 {
-                    *is_faulty = (*expect_value & !*is_string);
-                    *expect_value = !*is_string;
+                    *is_faulty = *expect_value;
+                    *expect_value = true;
+                    if (*expect_value) { count_key_delimiters += 1; }
+                }
+                else if ((*byte == VALUE_DELIMITER) & !*is_string)
+                {
+                    *is_faulty = (!*expect_value | !*is_string);
+                    if (*expect_value & (byte_prev != BACKSLASH) & (kvp.value.len() != 0)) { value_parsed(); }
                 }
                 else if (*expect_value & !*is_string)
                 {
@@ -329,7 +341,11 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [KeyValueSlice
                 if (*expect_value) { kvp.value = kvp.value.push_back(*byte); }
                 else               { kvp.key = kvp.key.push_back(*byte); }
             }
-            else if (kvp.value.len() != 0) { value_parsed(); }
+            else if (kvp.value.len() != 0)
+            {
+                count_key_delimiters += 1;  // to stop end_object/array from detecting a false error
+                value_parsed();
+            }
 
             i_minus_1 += 1;
             byte_prev = bytes[i_minus_1];
