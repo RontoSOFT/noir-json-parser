@@ -92,12 +92,10 @@ use crate::globals::LITERALS_FALSE;
 
 use crate::utils::print_bytes;
 
-use crate::convert::StringBytes;
-
 struct Property<KEY_SIZE, VALUE_SIZE>
 {
     key : [u8; KEY_SIZE],
-    value : StringBytes<VALUE_SIZE>,
+    value : [u8; VALUE_SIZE],
 }
 
 struct UnconstrainedProperty
@@ -115,7 +113,7 @@ impl<KEY_SIZE, VALUE_SIZE> Property<KEY_SIZE, VALUE_SIZE>
 {
     unconstrained fn new() -> Self
     {
-        Property { key: [BYTE_NULL; KEY_SIZE], value: StringBytes::new_invalid([BYTE_NULL; VALUE_SIZE]) }
+        Property { key: [BYTE_NULL; KEY_SIZE], value: [BYTE_NULL; VALUE_SIZE] }
     }
 }
 
@@ -373,17 +371,18 @@ impl<SIZE_JSON> JSON<SIZE_JSON>
 
         let mut prop = Property::new();
         let key_bytes = key.as_bytes();
+        let mut found = false;
         for object in json
         {
-            if (!prop.value.valid)
+            if (!found)
             {
-                prop.value.valid = (object.key.len() == KEY_SIZE);
-                if (prop.value.valid) { for i in 0..KEY_SIZE { prop.value.valid &= (key_bytes[i] == object.key[i]); } }
-                if (prop.value.valid)
+                found = (object.key.len() == KEY_SIZE);
+                if (found) { for i in 0..KEY_SIZE { found &= (key_bytes[i] == object.key[i]); } }
+                if (found)
                 {
                     prop.key = key_bytes;
 
-                    for i in 0..VALUE_SIZE { if (i < object.value.len() as u64) { prop.value.bytes[i] = object.value[i]; } }
+                    for i in 0..VALUE_SIZE { if (i < object.value.len() as u64) { prop.value[i] = object.value[i]; } }
                 }
             }
         }
