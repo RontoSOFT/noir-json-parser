@@ -13,7 +13,7 @@ unconstrained pub fn print_bytes<N>(label : str<N>, bytes : [u8])
 {
     dep::std::println(label);
     dep::std::println("{");
-    for j in 0..bytes.len() { let s = chars[bytes[j] - 32]; dep::std::println(f"    {s}"); }
+    for i in 0..bytes.len() { let s = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
     dep::std::println("}");
 }
 
