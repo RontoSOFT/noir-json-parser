@@ -176,6 +176,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
     let mut is_string = &mut false;
     let mut is_number = &mut false;
     let mut is_literal = &mut false;
+    let mut is_whitespace = &mut false;
     let mut expect_value = &mut false;
     let mut found_minus = &mut false;
     let mut found_digit_0 = &mut false;
@@ -222,6 +223,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
 
         if (!*is_faulty)
         {
+            *is_whitespace = false;
             *has_value = false;
             *is_number = false;
             *is_literal = false;
@@ -241,7 +243,7 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
             prop.print();
 
             let mut found = false;
-            // TODO: indexing (operator[]) for references of slices is broken, make a copy
+            // TODO: indexing (operator[]) for references of slices is broken, move it in a non-reference local var
             let mut json_ : [ UnconstrainedProperty ] = *json;
             for i in 0..json_.len()
             {
@@ -258,8 +260,9 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
                 }
             }
 
-            if (!found) { json_ = json_.push_back(*prop); }
-            { *json = json_; }
+            // move the non-reference var back into a reference type
+            if (!found) { *json = json_.push_back(*prop); }
+            else        { *json = json_; }
 
             { *prop = UnconstrainedProperty::new(); }
         }
@@ -269,6 +272,9 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
     let mut byte_prev : u8 = 0;
 
     let equals_byte = |x| { *byte == x };
+
+    let push_key   = || { prop.key = prop.key.push_back(*byte); };
+    let push_value = || { prop.value = prop.value.push_back(*byte); *has_value = true; };
 
     for i in 0..SIZE_JSON
     {
@@ -291,27 +297,19 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
                         }
                         else
                         {
-                            *is_faulty |= (count_arrays != 0) | !*expect_value;
+                            *is_faulty |= ((count_objects != 0) & (!*expect_value | (count_arrays != 0)));
+                            *is_faulty |= ((count_objects == 0) & (count_arrays != 0));
                             count_arrays += 1;
                         }
                     }
                     else if ((*byte == END_OBJECT) | (*byte == END_ARRAY))
                     {
-                        *is_faulty  = ((*count_pairs == count_key_delimiters) & !*has_value);
-                        *is_faulty |= (((*count_pairs + 1) != count_key_delimiters) & *has_value);
+                        *is_faulty  = (!*has_value & (*count_pairs == count_key_delimiters));
+                        *is_faulty |= (*has_value & ((*count_pairs + 1) != count_key_delimiters));
 
-                        if (!*is_faulty & (byte_prev != BACKSLASH) & *has_value) { value_parsed(); }
+                        if (*byte == END_OBJECT) { count_objects -= 1; } else { count_arrays -= 1; }
 
-                        if (*byte == END_OBJECT)
-                        {
-                            *is_faulty |= (count_objects != 1);
-                            count_objects -= 1;
-                        }
-                        else
-                        {
-                            *is_faulty |= (count_arrays != 1);
-                            count_arrays -= 1;
-                        }
+                        if (!*is_faulty & *has_value & (byte_prev != BACKSLASH)) { value_parsed(); }
                     }
                     else if (*byte == QUOTATION_MARK)
                     {
@@ -321,70 +319,69 @@ unconstrained pub fn parse<SIZE_JSON>(bytes : [u8; SIZE_JSON]) -> [ Unconstraine
                     else if (*byte == KEY_DELIMITER)
                     {
                         *is_faulty = *expect_value;
-                        *expect_value = true;
+                        *expect_value = (byte_prev != BACKSLASH);
                         count_key_delimiters += 1;
                     }
                     else if (*byte == VALUE_DELIMITER)
                     {
-                        *is_faulty = !(*expect_value & *is_string);
-                        if (*has_value & (byte_prev != BACKSLASH)) { value_parsed(); }
+                        *is_faulty = !*expect_value;
+                        if (!*is_faulty & *has_value & (byte_prev != BACKSLASH)) { value_parsed(); }
                     }
                     else if (*expect_value)
                     {
-                        *is_faulty = true;
-
-                        if (*byte == MINUS)
+                        *is_faulty = *is_whitespace;
+                        if ((*byte == ZERO) | DIGITS_1_9.any(equals_byte))
                         {
-                            *is_faulty = (*found_e_minus | *found_e_digit | (!*found_e & (*found_minus | *found_digit_0 | *found_digit_1_9)));
-                            *found_minus = true;
-                            *found_e_minus = *found_e;
-                        }
-                        else if (*byte == PLUS)
-                        {
-                            *is_faulty = (*found_e_plus | (!*found_e | (*found_e & *found_e_digit)));
-                            *found_e_plus = true;
-                        }
-                        else if ((*byte == ZERO) | DIGITS_1_9.any(equals_byte))
-                        {
-                            *is_faulty = (*found_digit_0 & !(*found_fraction | *found_e));
+                            *is_faulty |= (*found_digit_0 & !(*found_fraction | *found_e));
                             *found_digit_0 |= ((*byte == ZERO) & !*found_digit_1_9);
                             *found_digit_1_9 |= !*found_digit_0;
                             *found_e_digit = *found_e;
                             *found_fraction_digit = *found_fraction;
                         }
+                        else if (*byte == MINUS)
+                        {
+                            *is_faulty |= (*found_e_minus | *found_e_digit | (!*found_e & (*found_minus | *found_digit_0 | *found_digit_1_9)));
+                            *found_minus = true;
+                            *found_e_minus = *found_e;
+                        }
                         else if (*byte == DECIMAL_POINT)
                         {
-                            *is_faulty = !(*found_digit_0 | *found_digit_1_9);
+                            *is_faulty |= !(*found_digit_0 | *found_digit_1_9);
                             *found_fraction = true;
                         }
                         else if (eE.any(equals_byte) & !*is_literal)
                         {
-                            *is_faulty = (*found_e | (*found_fraction & !*found_fraction_digit));
+                            *is_faulty |= (*found_e | (*found_fraction & !*found_fraction_digit));
                             *found_e = true;
                         }
-                        else { *is_literal = (LITERALS.any(equals_byte) & !*found_digit_0 & !*found_digit_1_9); }
+                        else if (*byte == PLUS)
+                        {
+                            *is_faulty |= (*found_e_digit | *found_e_plus | !*found_e);
+                            *found_e_plus = true;
+                        }
+                        else
+                        {
+                            *is_literal = (LITERALS.any(equals_byte) & !*found_digit_0 & !*found_digit_1_9 & !*is_whitespace & (byte_prev != BACKSLASH));
+                            *is_faulty |= !*is_literal;
+                        }
 
-                        { *is_number = !(*is_faulty | *is_literal); }
-                        { *is_faulty = !(*is_number | *is_literal); }
+                        { *is_number  = (!*is_literal & (byte_prev != BACKSLASH)); }
+                        { *is_faulty |= (!*is_number & !*is_literal); }
                     }
                     else { *is_faulty = (*byte != BACKSLASH); }
                 }
                 else { *is_string = ((*byte != QUOTATION_MARK) | (*expect_value & (byte_prev == BACKSLASH))); }
 
                 // store the byte in key or value slice
-                if      (!*is_faulty & *expect_value & (*is_string | (*byte != KEY_DELIMITER)))       { prop.value = prop.value.push_back(*byte); *has_value = true; }
-                else if (!*is_faulty & *is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { prop.key = prop.key.push_back(*byte); }
+                if      (!*is_faulty & *expect_value & (*is_string | (*byte != KEY_DELIMITER)))       { push_value(); }
+                else if (!*is_faulty & *is_string & (*byte != QUOTATION_MARK) & (*byte != BACKSLASH)) { push_key(); }
             }
             else if (*is_string)
             {
-                if (*expect_value) { prop.value = prop.value.push_back(*byte); *has_value = true; }
-                else               { prop.key = prop.key.push_back(*byte); }
+                if (*expect_value) { push_value(); }
+                else               { push_key(); }
             }
-            else if (*has_value)
-            {
-                count_key_delimiters += 1;  // prevent END_OBJECT/ARRAY marker from detecting error (false negative)
-                value_parsed();
-            }
+            else { *is_whitespace = *has_value; }
 
             byte_prev = *byte;
 
