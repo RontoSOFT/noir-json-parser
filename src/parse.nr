@@ -1,5 +1,5 @@
 use crate::JSON;
-use crate::UnconstrainedProperty;
+use crate::Property;
 
 use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
@@ -55,7 +55,7 @@ impl JSON
         let mut count_arrays = 0;
 
         let mut json = &mut JSON { doc: [] };
-        let mut prop = &mut UnconstrainedProperty::new();
+        let mut prop = &mut Property::new();
 
         let value_parsed = ||
         {
@@ -121,7 +121,7 @@ impl JSON
 
                 if (!found) { json.doc = json.doc.push_back(*prop); }
 
-                { *prop = UnconstrainedProperty::new(); }
+                { *prop = Property::new(); }
             }
         };
 

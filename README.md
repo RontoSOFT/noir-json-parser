@@ -87,7 +87,7 @@ The file provides utility functions used in the `convert.nr` module. These funct
 
 The `parse.nr` module contains the implementation of the JSON parsing logic. It defines the structure of JSON objects and arrays and provides parsing functions to extract data from JSON strings.
 
-The main parsing function, `parse`, accepts a byte array and returns a slice of `UnconstrainedProperty` structs. Each `UnconstrainedProperty` represents a key-value pair in the JSON object and they are stored as byte slices.
+The main parsing function, `parse`, accepts a byte array and returns a slice of `Property` structs. Each `Property` represents a key-value pair in the JSON object and they are stored as byte slices.
 
 The parsing process considers various JSON syntax rules, including checking for correct nesting of objects and arrays, handling escaped characters within strings, and validating the structure of numeric values.
 
