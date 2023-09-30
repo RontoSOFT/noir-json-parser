@@ -9,11 +9,12 @@ global chars =
     "{","|","}","~"
 ];
 
-unconstrained pub fn print_bytes<N>(label : str<N>, bytes : [u8])
+unconstrained
+pub fn print_bytes<N>(label : str<N>, bytes : [u8])
 {
     dep::std::println(label);
     dep::std::println("{");
-    for i in 0..bytes.len() { let s = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
+    for i in 0..bytes.len() { let s : str<1> = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
     dep::std::println("}");
 }
 
@@ -22,3 +23,25 @@ unconstrained pub fn print_bytes<N>(label : str<N>, bytes : [u8])
 // then cast to a signed 127 bit value
 unconstrained pub fn int127FromUnsigned(x: u126) -> i127 { x as i127 }
 unconstrained pub fn int127FromField(x: Field) -> i127 { (x as u126) as i127 }
+
+unconstrained
+pub fn to_array<N>(sl : [u8]) -> [u8; N]
+{
+    let index = if ((N as u64) <= (sl.len() as u64)) { N } else { sl.len() };
+
+    let mut bytes : [u8; N] = [0; N];
+    for i in 0..index { bytes[i] = sl[i]; }
+    bytes
+}
+
+unconstrained
+pub fn slice_eq_array<T, N>(left : [T], right : [T; N]) -> bool
+{
+    if (left.len() != right.len()) { false }
+    else
+    {
+        let mut equal = true;
+        for i in 0..N { equal &= (left[i] == right[i]); }
+        equal
+    }
+}
