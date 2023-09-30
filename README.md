@@ -67,10 +67,6 @@ The module handles various JSON value types:
 
 ## Project Structure
 
-Here is [an UML diagram](https://www.plantuml.com/plantuml/umla/VL9VYnCn47_FfnZkGRPuVT0N9PRb52gSIa_edQ1IZjnshYwcIKXcJnVnkpl99ZILqgTDPdv_VZkPgq3Aqx3NGdHQXG2VlNNeQLnyN7wzNrz_Mrx2bxUVxfRftC8V0V0SVk8euVlm-WqKr2RLdvGUC7SAg_GC_cfc4jQe7yNVudPdEci2UTKRt1Rh_qngwNAVrtBfxdnlg7cs7mW2rsO7Zm_hczMYJlym4eQSyZXV85RPIU3ln2WE4R13EZsKXfDEdDWklFE3ZF6SjsGxgu5dyCJG74-5TzRgnQfjwg2h3MlUEEgjMJnmlytOzptgxJbm0XJqjI7SeJ-7xr-yV7KSpoaVSCgMZcaqzppMeW9PfjHPBfPEFkxcy33Py7PwboWVx1xvtjnEpptBPMCDHbgKbdA71FFv54NAz66tJcaTe1LrES9EXeXuZugG6I1EGvXRmrKWNXmuH6Yi1_nDw0qxZxDBg4GYSWZevxrn0q7P051cMoq1foqEKgOVPjEsR0ERNWI7NVyu0lr0eD7XXIXD1kRv2N65PZlizJy0) detailing library interface, methods, structs and information flow. Note that it is still being refined.
-
-<br>
-
 ### `globals.nr`
 
 The file contains global constants used in the `convert.nr` module. These constants define characters, literals, and delimiters used in the numeric representation.
@@ -93,34 +89,29 @@ The parsing process considers various JSON syntax rules, including checking for 
 
 #### Example
 
-You can use the `JSON` struct to parse JSON strings and extract values from keys via the `get` method:
+You can use the `JSON` struct to parse JSON strings and extract values from keys via the `bytesOf` method:
 
 ```rust
-fn check_my_key()
+unconstrained fn check_my_key()
 {
     let (key, value) = ("my_key", "100");
 
-    let kvp = JSON::new("{'my_key' : 100}").get(key);
+    let bytes = JSON::parse("{'my_key' : 100}").bytesOf(key);
 
-    assert(kvp.key == key.as_bytes());
-    assert(kvp.value == value.as_bytes());
+    assert(utils::slice_eq_array(bytes, value.as_bytes()) == true);
 }
 ```
 
-You can access the `parse` method directly, however only inside an `unsconstrained` method:
+You can access `get*` methods directly:
 
 ```rust
 unconstrained fn check_my_key_unconstrained()
 {
-    let (key, value) = ("my_key", "100".as_bytes());
+    let (key, value) = ("my_key", "100");
 
-    let json = dep::rontosoft::parse::parse("{'my_key' : 100}");
+    let field = JSON::parse("{'my_key' : 100}").getField(key);
 
-    assert(json.len() == 1);
-
-    assert(json[0].value[0] == value[0]);
-    assert(json[0].value[1] == value[1]);
-    assert(json[0].value[2] == value[2]);
+    assert(field == 100);
 }
 ```
 
@@ -130,22 +121,22 @@ unconstrained fn check_my_key_unconstrained()
 
 The `convert.nr` module provides utility functions for converting numeric representations encoded in byte arrays to their respective numeric types. These functions are designed to handle different numeric formats and return `Option<T>` values for safe error handling.
 
-#### `asBool<N>(bytes: [u8; N]) -> Option<bool>`
+#### `asBool(bytes: [u8]) -> Option<bool>`
 
-This function attempts to parse a byte array as a boolean value and returns an `Option<bool>`. It recognizes common boolean literals such as `null`, `true`, and `false`.
+This function attempts to parse a byte slice as a boolean value and returns an `Option<bool>`. It recognizes common boolean literals such as `null`, `true`, and `false`.
 
-#### `asField<N>(bytes: [u8; N]) -> Option<Field>`
+#### `asField(bytes: [u8]) -> Option<Field>`
 
-The `asField` function parses a byte array as a numeric field and returns an `Option<Field>`. It can handle signed and unsigned numbers.
+The `asField` function parses a byte slice as a numeric field and returns an `Option<Field>`. It can handle signed and unsigned numbers.
 
-#### `asInteger<N>(bytes: [u8; N]) -> Option<i127>`
+#### `asInteger(bytes: [u8]) -> Option<i127>`
 
-The `asInteger` function parses a byte array as an integer value and returns an `Option<i127>`. It can handle negative integers and converts them to signed integers.
+The `asInteger` function parses a byte slice as an integer value and returns an `Option<i127>`. It can handle negative integers and converts them to signed integers.
 
 #### Example
 
 ```rust
-let bytes : [u8; 3] = JSON::new("{'age':30}").get("age").value;
+let bytes = JSON::parse("{'my_key' : 100}").bytesOf("my_key");
 let result = convert::asField(bytes); //asBool, asInteger
 
 assert(result.is_some());
