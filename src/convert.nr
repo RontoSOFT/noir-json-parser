@@ -10,8 +10,6 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
-use crate::utils::int127FromField;
-
 unconstrained
 pub fn asBool(bytes: [u8]) -> Option<bool>
 {
@@ -110,26 +108,6 @@ pub fn asField(bytes: [u8]) -> Option<Field>
     else { Option::none() }
 }
 
-unconstrained
-pub fn asInteger(bytes: [u8]) -> Option<i127>
-{
-    let value = asField(bytes);
-
-    if (value.is_some())
-    {
-        let value_field = value.unwrap_unchecked();
-        let value_i127 =
-        if (bytes[0] == MINUS) { (-(-value_field) as u126) as i127}
-        else                   { int127FromField(value_field) };
-                               // { -int127FromUnsigned((-value_field) as u126)} // works
-                               // { (-int127FromField(-value_field) as u126) as i127 } // works
-                               // { -int127FromField(-value_field) } // TODO: this line fails
-
-        { Option::some(value_i127) }
-    }
-    else { Option::none() }
-}
-
 impl JSON
 {
     // linear search of json keys to return an Option slice of the key's value bytes
@@ -167,26 +145,23 @@ impl JSON
     }
 
     unconstrained
-    pub fn getField<N>(self, key : str<N>) -> Option<Field>
+    pub fn getInteger<N>(self, key : str<N>) -> Option<i54>
     {
+        let mut result : Option<i54> = Option::none();
         let option = self.bytesOf(key);
+        if (option.is_some())
+        {
+            let bytes : [u8] = option.unwrap_unchecked();
+            let value = asField(bytes);
+            if (value.is_some())
+            {
+                let value_field = value.unwrap_unchecked();
+                let value_i54 = if (bytes[0] == MINUS) { -((-value_field) as i54) } else { value_field as i54 };
 
-        if (option.is_some()) { asField(option.unwrap_unchecked()) } else { Option::none() }
-    }
+                result = Option::some(value_i54);
+            }
+        }
 
-    unconstrained
-    pub fn getInteger<N>(self, key : str<N>) -> Option<i127>
-    {
-        let option = self.bytesOf(key);
-
-        if (option.is_some()) { asInteger(option.unwrap_unchecked()) } else { Option::none() }
+        result
     }
 }
-
-    // let v : [u8] = option.unwrap_unchecked();
-    // for i in 0..v.len() { dep::std::println(v[i]); }
-
-    // unconstrained fn asUnsigned<N>(propName : str<N>) -> u54
-    // unconstrained fn asSigned<N>(propName : str<N>) -> i54
-
-    // for i in 0..bytes.len() { dep::std::println(bytes[i]); }
