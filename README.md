@@ -98,7 +98,8 @@ unconstrained fn check_my_key()
 
     let bytes = JSON::parse("{'my_key' : 100}").bytesOf(key);
 
-    assert(utils::slice_eq_array(bytes, value.as_bytes()) == true);
+    assert(bytes.eq_string(value) == true);
+    assert(bytes.eq_array(value.as_bytes()) == true);
 }
 ```
 
