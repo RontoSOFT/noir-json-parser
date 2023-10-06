@@ -9,6 +9,9 @@ use crate::globals::eE;
 use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
+use crate::globals::BEGIN_ARRAY;
+use crate::globals::END_ARRAY;
+use crate::globals::VALUE_DELIMITER;
 
 unconstrained
 pub fn asBool(bytes: [u8]) -> Option<bool>
@@ -108,6 +111,32 @@ pub fn asField(bytes: [u8]) -> Option<Field>
     else { Option::none() }
 }
 
+unconstrained
+pub fn asSlice(bytes: [u8]) -> Option<[ [u8] ]>
+{
+    let mut result : [ [u8] ] = [];
+    let mut current_value : [u8] = [];
+
+    let mut count_inner_arrays : Field = 0;
+
+    for i in 1..(bytes.len() - 1) // 1st byte is '[', last byte is ']'
+    {
+        if      (bytes[i] == BEGIN_ARRAY) { count_inner_arrays += 1; }
+        else if ((bytes[i] == END_ARRAY)) { count_inner_arrays -= 1; }
+
+        if ((bytes[i] == VALUE_DELIMITER) & (count_inner_arrays == 0))
+        {
+            result = result.push_back(current_value);
+            current_value = [];
+        }
+        else { current_value = current_value.push_back(bytes[i]); }
+    }
+
+    result = result.push_back(current_value);
+
+    Option::some(result)
+}
+
 impl JSON
 {
     // linear search of json keys to return an Option slice of the key's value bytes
@@ -163,5 +192,17 @@ impl JSON
         }
 
         result
+    }
+
+    unconstrained
+    pub fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
+    {
+        if (N == 0) { if (self.doc.len() == 1) { asSlice(self.doc[0].value) } else { Option::none() } }
+        else
+        {
+            let option = self.bytesOf(key);
+
+            if (option.is_some()) { asSlice(option.unwrap_unchecked()) } else { Option::none() }
+        }
     }
 }
