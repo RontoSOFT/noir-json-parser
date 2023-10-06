@@ -29,14 +29,29 @@ pub fn to_array<N>(sl : [u8]) -> [u8; N]
     bytes
 }
 
-unconstrained
-pub fn slice_eq_array<T, N>(left : [T], right : [T; N]) -> bool
+trait ByteArraySliceEquality
 {
-    if (left.len() != right.len()) { false }
-    else
+    fn eq_array(self, right : [u8]) -> bool;
+    fn eq_string(self, right : str) -> bool;
+}
+
+impl ByteArraySliceEquality for [u8]
+{
+    unconstrained
+    pub fn eq_array<N>(self, right : [u8; N]) -> bool
     {
-        let mut equal = true;
-        for i in 0..N { equal &= (left[i] == right[i]); }
-        equal
+        if (self.len() != N) { false }
+        else
+        {
+            let mut equal = true;
+            for i in 0..N { equal &= (self[i] == right[i]); }
+            equal
+        }
+    }
+
+    unconstrained
+    pub fn eq_string<N>(self, right : str<N>) -> bool
+    {
+        self.eq_array(right.as_bytes())
     }
 }
