@@ -2,6 +2,7 @@ mod globals;
 mod utils;
 mod parse;
 mod convert;
+mod float;
 
 use crate::globals::BYTE_NULL;
 use crate::utils::print_bytes;

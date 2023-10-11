@@ -5,146 +5,152 @@ use crate::JSON;
 use crate::globals::BYTE_NULL;
 use crate::globals::PLUS;
 use crate::globals::MINUS;
+use crate::globals::DECIMAL_POINT;
 use crate::globals::eE;
 use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
-use crate::globals::BEGIN_ARRAY;
-use crate::globals::END_ARRAY;
-use crate::globals::VALUE_DELIMITER;
 
-trait Conversions
+unconstrained
+pub fn asBool(bytes: [u8]) -> Option<bool>
 {
-    fn asBool(self) -> Option<bool>;
-    fn asField(self) -> Option<Field>;
-    fn asSlice(self) -> Option<[[u8]]>;
-}
-
-impl Conversions for [u8]
-{
-    unconstrained
-    pub fn asBool(self) -> Option<bool>
+    let mut i : &mut Field = &mut -1;
+    let equal_value = |a| { *i += 1; bytes[*i] == a };
+    let check_four_bytes = || -> bool
     {
-        let mut i : &mut Field = &mut -1;
-        let equal_value = |a| { *i += 1; self[*i] == a };
-        let check_four_bytes = || -> bool
-        {
-            if      (self[0] == LITERALS_TRUE[0]) { LITERALS_TRUE.all(equal_value) }
-            else if (self[0] == LITERALS_NULL[0]) { LITERALS_NULL.all(equal_value) }
-            else                                   { false }
-        };
+        if      (bytes[0] == LITERALS_TRUE[0]) { LITERALS_TRUE.all(equal_value) }
+        else if (bytes[0] == LITERALS_NULL[0]) { LITERALS_NULL.all(equal_value) }
+        else                                   { false }
+    };
 
-        let N = self.len();
-        let mut valid = false;
-        if      (N == 4) { valid = check_four_bytes(); }
-        else if (N == 5)
-        {
-            if (self[4] == BYTE_NULL) { valid = check_four_bytes(); }
-            else                       { valid = LITERALS_FALSE.all(equal_value); }
-        }
-
-        if (valid) { Option::some(self[0] == LITERALS_TRUE[0]) } else { Option::none() }
+    let N = bytes.len();
+    let mut valid = false;
+    if      (N == 4) { valid = check_four_bytes(); }
+    else if (N == 5)
+    {
+        if (bytes[4] == BYTE_NULL) { valid = check_four_bytes(); }
+        else                       { valid = LITERALS_FALSE.all(equal_value); }
     }
 
-    unconstrained
-    pub fn asField(self) -> Option<Field>
-    {
-        let N = self.len() as u64;
+    if (valid) { Option::some(bytes[0] == LITERALS_TRUE[0]) } else { Option::none() }
+}
 
-        let mut valid = // ensure at least one digit is valid
-        (N < 78) &
-        if (N == 1) { (self[0] != BYTE_NULL) & (self[0] != MINUS) & (self[0] != PLUS) }
-        else        { ((self[0] != BYTE_NULL) & (self[0] != PLUS)) | ((self[0] == MINUS) & (self[1] != BYTE_NULL) & (self[1] != PLUS)) };
+fn getWholeNumber(bytes: [u8]) -> Field
+{
+    let N = bytes.len() as u64;
+    let mut value : Field = 0;
+    let mut units : Field = 1;
+
+    for i in 0..N
+    {
+        let byte = bytes[(N - 1 - i)];             // walking property value bytes in reverse
+        value += ((byte - 0x30) as Field) * units; // convert ASCII byte to integer digit number
+        units *= 10;
+    }
+
+    value
+}
+
+fn getExponent(bytes: [u8]) -> Field
+{
+    let has_minus = (bytes[0] == MINUS);
+    let has_plus = (bytes[0] == PLUS);
+
+    let mut exponent = getWholeNumber( if (has_minus | has_plus) { bytes.remove(0).0 } else { bytes } );
+    exponent = 10.pow_32(exponent);
+    if (has_minus) { exponent = (1 / exponent); }
+
+    exponent
+}
+
+unconstrained
+pub fn asField(bytes: [u8]) -> Option<Field>
+{
+    let mut result = Option::none();
+    let N = bytes.len() as u64;
+
+    let mut valid = (N < 78) & (N != 0) & // ensure at least one digit is valid
+    if (N == 1) { (bytes[0] != BYTE_NULL) & (bytes[0] != MINUS) & (bytes[0] != PLUS) }
+    else        { ((bytes[0] != BYTE_NULL) & (bytes[0] != PLUS)) | ((bytes[0] == MINUS) & (bytes[1] != BYTE_NULL) & (bytes[1] != PLUS)) };
+
+    if (valid)
+    {
+        let has_minus = (bytes[0] == MINUS);
+
+        let mut checked_nulls = false;
+        let mut has_exponent = false;
+
+        let mut bytes_value : [u8] = [];
+        let mut bytes_exponent : [u8] = [];
+        let mut bytes_ref : &mut [u8] = &mut bytes_value;
+
+        for i in (has_minus as u64)..N // if minus is present, start at index 1
+        {
+            if (valid & !checked_nulls)
+            {
+                let byte = bytes[i];
+
+                if      (((byte >= 0x30) & (byte <= 0x39)) | (byte == MINUS) | (byte == PLUS)) { *bytes_ref = bytes_ref.push_back(byte); }
+                else if (eE.any(|e| byte == e))
+                {
+                    bytes_ref = &mut bytes_exponent;
+                    valid = !has_exponent;
+                    has_exponent = (valid & !has_exponent);
+                }
+                else
+                {
+                    checked_nulls = true;
+                    for j in i..N { valid &= (bytes[j] == BYTE_NULL); } // (contiguous) nulls accepted only at the end of array
+                }
+            }
+        }
 
         if (valid)
         {
-            let mut value : Field = 0;
-            let mut units : Field = 1;
-            let mut exponent : Field = -1;
-            let mut checked_exponent = false;
-            let mut has_exponent = false;
+            let mut value = getWholeNumber(bytes_value);
 
-            for i in 0..N
-            {
-                if (valid)
-                {
-                    let index = (N - 1 - i); // walking property value self in reverse
-                    let byte = self[index];
+            if (has_minus)    { value = -value; }
+            if (has_exponent) { value *= getExponent(bytes_exponent); }
 
-                    if ((byte >= 0x30) & (byte <= 0x39))
-                    {
-                        value += ((byte - 0x30) as Field) * units; // convert ASCII byte to integer digit number
-                        units *= 10;
-                    }
-                    else if ((byte == MINUS) | (byte == PLUS) | eE.any(|e| byte == e))
-                    {
-                        if (!checked_exponent)
-                        {
-                            for j in 0..index { if (!has_exponent) { has_exponent = eE.any(|e| self[index - j] == e); } }
-                            checked_exponent = true;
-                        }
-
-                        if (has_exponent & (exponent == -1))
-                        {
-                            valid = ((N >= 3) & (units != 1)); // 0e-0 or 0e+0 or 0e0 and value is at least 0
-
-                            if (valid)
-                            {
-                                exponent = 10.pow_32(value);
-                                if (byte == MINUS) { exponent = (1 / exponent); }
-                                // TODO: why does the line below fail a test asField::property_number_minus_three_zero_e_minus_one_as_field ?
-                                // exponent = if (byte == MINUS) { 10.pow_32(-value) } else { 10.pow_32(value) };
-                            }
-
-                            value = 0;
-                            units = 1;
-                        }
-                    }
-                    else
-                    {
-                        valid  = eE.any(|e| byte == e);
-                        valid |= ((value == 0) & (byte == BYTE_NULL));  // nulls accepted only at the end of array
-                        valid |= ((index == 0) & (byte == MINUS));      // minus accepted only at the start of the array when exponent is missing
-                    }
-                }
-            }
-
-            if (valid)
-            {
-                if (exponent != -1) { value *= exponent; }
-                if (self[0] == MINUS) { value = -value; }
-                Option::some(value)
-            }
-            else { Option::none() }
+            result = Option::some(value);
         }
-        else { Option::none() }
     }
 
-    unconstrained
-    pub fn asSlice(self) -> Option<[ [u8] ]>
+    result
+}
+
+unconstrained
+pub fn asFloat(bytes: [u8]) -> (Option<Field>, Option<Field>)
+{
+    // let mut result = Option::none();
+    let N = bytes.len() as u64;
+
+    // split bytes from decimal point to e/null/end, if any, from the other bytes
+    let mut bytes_whole : [u8] = [];
+    let mut bytes_fraction : [u8] = [];
+    let mut bytes_ref : &mut [u8] = &mut bytes_whole;
+
+    for i in 0..N
     {
-        let mut result : [ [u8] ] = [];
-        let mut current_value : [u8] = [];
+        let byte = bytes[i];
 
-        let mut count_inner_arrays : Field = 0;
-
-        for i in 1..(self.len() - 1) // 1st byte is '[', last byte is ']'
+        if (byte == DECIMAL_POINT) { bytes_ref = &mut bytes_fraction; }
+        else
         {
-            if      (self[i] == BEGIN_ARRAY) { count_inner_arrays += 1; }
-            else if ((self[i] == END_ARRAY)) { count_inner_arrays -= 1; }
+            if (eE.any(|e| byte == e)) { bytes_ref = &mut bytes_whole; }
 
-            if ((self[i] == VALUE_DELIMITER) & (count_inner_arrays == 0))
-            {
-                result = result.push_back(current_value);
-                current_value = [];
-            }
-            else { current_value = current_value.push_back(self[i]); }
+            { *bytes_ref = bytes_ref.push_back(byte); }
         }
-
-        result = result.push_back(current_value);
-
-        Option::some(result)
     }
+
+    let whole = asField(bytes_whole).unwrap_unchecked();
+    let fraction = getWholeNumber(bytes_fraction);
+
+    dep::std::println(whole);
+    dep::std::println(fraction);
+
+    let tup : (Option<Field>, Option<Field>) = (Option::some(whole), Option::some(fraction));
+    tup
 }
 
 impl JSON
@@ -178,20 +184,20 @@ impl JSON
     unconstrained
     pub fn getBool<N>(self, key : str<N>) -> Option<bool>
     {
-        let option = self.bytesOf(key);
+        let bytes = self.bytesOf(key);
 
-        if (option.is_some()) { option.unwrap_unchecked().asBool() } else { Option::none() }
+        if (bytes.is_some()) { asBool(bytes.unwrap_unchecked()) } else { Option::none() }
     }
 
     unconstrained
     pub fn getInteger<N>(self, key : str<N>) -> Option<i54>
     {
         let mut result : Option<i54> = Option::none();
-        let option = self.bytesOf(key);
-        if (option.is_some())
+        let bytes = self.bytesOf(key);
+        if (bytes.is_some())
         {
-            let bytes : [u8] = option.unwrap_unchecked();
-            let value = bytes.asField();
+            let bytes : [u8] = bytes.unwrap_unchecked();
+            let value = asField(bytes);
             if (value.is_some())
             {
                 let value_field = value.unwrap_unchecked();
@@ -202,17 +208,5 @@ impl JSON
         }
 
         result
-    }
-
-    unconstrained
-    pub fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
-    {
-        if (N == 0) { if (self.doc.len() == 1) { self.doc[0].value.asSlice() } else { Option::none() } }
-        else
-        {
-            let option = self.bytesOf(key);
-
-            if (option.is_some()) { option.unwrap_unchecked().asSlice() } else { Option::none() }
-        }
     }
 }

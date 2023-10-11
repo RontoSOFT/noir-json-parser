@@ -12,8 +12,7 @@ global chars =
 unconstrained
 pub fn print_bytes<N>(label : str<N>, bytes : [u8])
 {
-    if (N != 0) { dep::std::println(label); }
-
+    dep::std::println(label);
     dep::std::println("{");
     for i in 0..bytes.len() { let s : str<1> = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
     dep::std::println("}");
@@ -29,29 +28,14 @@ pub fn to_array<N>(sl : [u8]) -> [u8; N]
     bytes
 }
 
-trait ByteArraySliceEquality
+unconstrained
+pub fn slice_eq_array<T, N>(left : [T], right : [T; N]) -> bool
 {
-    fn eq_array(self, right : [u8]) -> bool;
-    fn eq_string(self, right : str) -> bool;
-}
-
-impl ByteArraySliceEquality for [u8]
-{
-    unconstrained
-    pub fn eq_array<N>(self, right : [u8; N]) -> bool
+    if (left.len() != right.len()) { false }
+    else
     {
-        if (self.len() != N) { false }
-        else
-        {
-            let mut equal = true;
-            for i in 0..N { equal &= (self[i] == right[i]); }
-            equal
-        }
-    }
-
-    unconstrained
-    pub fn eq_string<N>(self, right : str<N>) -> bool
-    {
-        self.eq_array(right.as_bytes())
+        let mut equal = true;
+        for i in 0..N { equal &= (left[i] == right[i]); }
+        equal
     }
 }
