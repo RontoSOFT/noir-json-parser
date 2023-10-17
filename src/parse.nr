@@ -166,6 +166,7 @@ impl JSON
 
                             if (!is_faulty & has_value & (byte_prev != BACKSLASH))
                             {
+
                                 if (JSON::value_parsed(prop, is_number, is_literal, found_minus, found_digit_0, found_digit_1_9, found_fraction, found_fraction_digit, found_e, found_e_digit))
                                 {
                                     has_value = false;
