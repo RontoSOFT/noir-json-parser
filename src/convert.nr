@@ -11,25 +11,29 @@ use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 
+use crate::utils::slice_eq_array;
+
+fn check_four_bytes(bytes: [u8]) -> bool
+{
+    let mut result = false;
+
+    let first = bytes[0];
+    if      (first == LITERALS_TRUE[0]) { result = slice_eq_array(bytes, LITERALS_TRUE); }
+    else if (first == LITERALS_NULL[0]) { result = slice_eq_array(bytes, LITERALS_NULL); }
+
+    result
+}
+
 unconstrained
 pub fn asBool(bytes: [u8]) -> Option<bool>
 {
-    let mut i : &mut Field = &mut -1;
-    let equal_value = |a| { *i += 1; bytes[*i] == a };
-    let check_four_bytes = || -> bool
-    {
-        if      (bytes[0] == LITERALS_TRUE[0]) { LITERALS_TRUE.all(equal_value) }
-        else if (bytes[0] == LITERALS_NULL[0]) { LITERALS_NULL.all(equal_value) }
-        else                                   { false }
-    };
-
     let N = bytes.len();
     let mut valid = false;
-    if      (N == 4) { valid = check_four_bytes(); }
+    if      (N == 4) { valid = check_four_bytes(bytes); }
     else if (N == 5)
     {
-        if (bytes[4] == BYTE_NULL) { valid = check_four_bytes(); }
-        else                       { valid = LITERALS_FALSE.all(equal_value); }
+        if (bytes[4] == BYTE_NULL) { valid = check_four_bytes(bytes.pop_back().0); }
+        else                       { valid = slice_eq_array(bytes, LITERALS_FALSE); }
     }
 
     if (valid) { Option::some(bytes[0] == LITERALS_TRUE[0]) } else { Option::none() }
@@ -40,10 +44,11 @@ fn getWholeNumber(bytes: [u8]) -> Field
     let N = bytes.len() as u64;
     let mut value : Field = 0;
     let mut units : Field = 1;
-
-    for i in 0..N
+    let mut it = N;
+    for _ in 0..N
     {
-        let byte = bytes[(N - 1 - i)];             // walking property value bytes in reverse
+        it -= 1;
+        let byte = bytes[it];                      // walking property value bytes in reverse
         value += ((byte - 0x30) as Field) * units; // convert ASCII byte to integer digit number
         units *= 10;
     }
@@ -53,8 +58,9 @@ fn getWholeNumber(bytes: [u8]) -> Field
 
 fn getExponent(bytes: [u8]) -> Field
 {
-    let has_minus = (bytes[0] == MINUS);
-    let has_plus = (bytes[0] == PLUS);
+    let first = bytes[0];
+    let has_minus = (first == MINUS);
+    let has_plus = (first == PLUS);
 
     let mut exponent = getWholeNumber( if (has_minus | has_plus) { bytes.remove(0).0 } else { bytes } );
     exponent = 10.pow_32(exponent);
@@ -69,13 +75,14 @@ pub fn asField(bytes: [u8]) -> Option<Field>
     let mut result = Option::none();
     let N = bytes.len() as u64;
 
+    let first = bytes[0];
     let mut valid = (N < 78) & (N != 0) & // ensure at least one digit is valid
-    if (N == 1) { (bytes[0] != BYTE_NULL) & (bytes[0] != MINUS) & (bytes[0] != PLUS) }
-    else        { ((bytes[0] != BYTE_NULL) & (bytes[0] != PLUS)) | ((bytes[0] == MINUS) & (bytes[1] != BYTE_NULL) & (bytes[1] != PLUS)) };
+    if (N == 1) { (first != BYTE_NULL) & (first != MINUS) & (first != PLUS) }
+    else        { ((first != BYTE_NULL) & (first != PLUS)) | ((first == MINUS) & (bytes[1] != BYTE_NULL) & (bytes[1] != PLUS)) };
 
     if (valid)
     {
-        let has_minus = (bytes[0] == MINUS);
+        let has_minus = (first == MINUS);
 
         let mut checked_nulls = false;
         let mut has_exponent = false;
@@ -159,8 +166,10 @@ impl JSON
     unconstrained
     pub fn bytesOf<KEY_SIZE>(self, key : str<KEY_SIZE>) -> Option<[u8]>
     {
-        let key_bytes = key.as_bytes();
         let mut result : Option<[u8]> = Option::none();
+
+        let key_bytes = key.as_bytes();
+
         let mut found = false;
         for kvp in self.doc
         {
@@ -168,13 +177,7 @@ impl JSON
             if (found)
             {
                 for i in 0..KEY_SIZE { found &= (key_bytes[i] == kvp.key[i]); }
-
-                if (found)
-                {
-                    let mut value_bytes : [u8] = [];
-                    for i in 0..kvp.value.len() { value_bytes = value_bytes.push_back(kvp.value[i]); }
-                    result = Option::some(value_bytes);
-                }
+                if (found) { result = Option::some(kvp.value); }
             }
         }
 
@@ -193,7 +196,9 @@ impl JSON
     pub fn getInteger<N>(self, key : str<N>) -> Option<i54>
     {
         let mut result : Option<i54> = Option::none();
+
         let bytes = self.bytesOf(key);
+
         if (bytes.is_some())
         {
             let bytes : [u8] = bytes.unwrap_unchecked();
