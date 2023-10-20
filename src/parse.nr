@@ -50,7 +50,7 @@ impl JSON
         let mut found_fraction = &mut false;
         let mut found_fraction_digit = &mut false;
 
-        let mut count_pairs : &mut Field = &mut 0;
+        let mut count_pairs : Field = 0;
         let mut count_key_delimiters : Field = 0;
         let mut count_objects : Field = 0;
         let mut count_arrays : Field = 0;
@@ -119,7 +119,6 @@ impl JSON
                 if (!found)
                 {
                     json.doc = json.doc.push_back(*prop);
-                    *count_pairs += 1;
                 }
 
                 { *prop = Property::new(); }
@@ -161,8 +160,9 @@ impl JSON
                         }
                         else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                         {
-                            is_faulty  = (!*has_value & (*count_pairs == count_key_delimiters));
-                            is_faulty |= (*has_value & ((*count_pairs + 1) != count_key_delimiters));
+                            let count_pairs = json.doc.len();
+                            is_faulty  = (!*has_value & (count_pairs == count_key_delimiters));
+                            is_faulty |= (*has_value & ((count_pairs + 1) != count_key_delimiters));
 
                             if (byte == END_OBJECT)
                             {
