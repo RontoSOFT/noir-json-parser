@@ -34,7 +34,7 @@ impl Float32Fields
 
         let mut quotient = self.fraction;
         let mut index : u8 = (self.leading_zeros as u8);
-        for _ in 1..MAGNITUDE_ORDER_MAX { if (quotient != 0) { quotient /= 10; index += 1; } }
+        for _ in 0..MAGNITUDE_ORDER_MAX { if (quotient != 0) { quotient /= 10; index += 1; } }
 
         POWERS_OF_TEN[index]
     }
@@ -42,80 +42,63 @@ impl Float32Fields
     unconstrained
     pub fn toFloat32(self) -> Float32
     {
-        // extract sign
-        let mut result = Float32 { sign: (self.whole / TWO_POWER_126) as u1, exponent: 0, mantissa: 0 };
+        let mut result = Float32 { sign: ((self.whole & TWO_POWER_126) != 0) as u1, exponent: 0, mantissa: 0 };
 
-        if ((self.whole == 0) & (self.fraction != 0))
+        if ((self.whole == 0) & (self.fraction != 0)) // **negative** exponent value (zero excluded)
         {
-            // exponent value is **negative**
-
-            // absolute value of exponent is strictly greater than zero
-            let mut exponent : u8 = 1;
-
-            // deduce exponent, knowing `fraction >= denominator / by 2^abs(exponent + 1)`
-            let mut two_power_exponent : u127 = 2;
+            // compute exponent knowing `fraction >= denominator / by 2^abs(exponent + 1)`
             let denominator : u127 = self.getDenominator();
-            for _ in 0..126 { if ((self.fraction * two_power_exponent) < denominator) { two_power_exponent *= 2; exponent += 1; } }
+            let mut numerator : u127 = self.fraction * 2;
+            let mut exponent : u8 = 1; // whole part is zero <=> abs(exponent) is strictly greater than zero
+            for _ in 0..127 { if (numerator < denominator) { numerator *= 2; exponent += 1; } }
+            result.exponent = (BIAS - exponent); // actual value is negative, substract it from bias (add -exponent)
 
-            // note: `two_power_exponent` represents **lower** bound of numerical interval for exponent,
-            //       because the value is signed; actual value is one less what it is currently here
-
-            // having a signed exponent (actual) value, substract from bias
-            result.exponent = (BIAS - exponent);
-
-            // compute percentage of fraction part in exponent numeric range
-            // `percent = ( (numerator * two_power_exponent) - denominator ) / denominator`
-            // `mantissa = percent * 2^PRECISION`
-
-            let numerator : u127 = (((self.fraction * two_power_exponent) - denominator) * TWO_POWER_PRECISION);
-            result.mantissa = ((numerator / denominator) as u23);
+            result.mantissa = ((((numerator - denominator) * TWO_POWER_PRECISION) / denominator) as u23);
         }
-        else if (self.whole != 0)
+        else if (self.whole != 0) // **positive** exponent value (zero included)
         {
-            // exponent value is **positive**
-
-            // complement whole part to count digits correctly
-            let mut whole : u127 = self.whole;
-            if (result.sign == 1) { whole = (!whole + 1); }
-
-            // compute exponent value by counting binary digits in (complemented) whole part
+            // compute exponent value by counting binary digits in complemented whole part
+            let mut whole : u127 = if (result.sign == 1) { !self.whole + 1 } else { self.whole };
             let mut exponent : u8 = 0;
-            for _ in 0..126 { if (whole != 1) { whole /= 2; exponent += 1; } }
+            for _ in 0..127 { if (whole != 1) { whole /= 2; exponent += 1; } }
+            result.exponent = (BIAS + exponent);
 
-            // add bias for signed values
-            result.exponent = (exponent + BIAS);
+            whole = self.whole; // reusing whole variable to encode mantissa in
 
-            // decimal point representation boundary
-            if ((exponent > PRECISION) & (exponent < BIAS_PLUS_ONE))
+            if (exponent < PRECISION) // fraction representation boundary
             {
-                // truncate bytes on the right: left-shift whole part exponent delta times
-                whole = self.whole;
-                for _ in PRECISION..exponent { whole /= 2; }
-
-                // encode whole part to mantissa, ignoring fraction
-                result.mantissa = (whole as u23);
-            }
-            else
-            {
-                // encode whole part to mantissa
-                result.mantissa = (self.whole as u23);
-
                 // encode binary digits of fraction to mantissa
-                let mut quotient = self.fraction;
                 let denominator : u127 = self.getDenominator();
-                for _ in exponent..PRECISION // number of bits available is PRECISION less exponent's power index
+                let mut quotient : u127 = self.fraction;
+                for _ in exponent..PRECISION // PRECISION less exponent bits available for fraction
                 {
                     quotient *= 2;
-                    result.mantissa *= 2; // insert a zero bit as LSB
+                    whole *= 2; // insert a zero bit as LSB
 
+                    // dep::std::println(f"{_} - quot : {quotient}");
                     if (quotient >= denominator)
                     {
                         quotient -= denominator;
-                        result.mantissa |= 1; // change bit to one
+                        whole |= 1; // change bit to one
                     }
                 }
+
+                // round up based on hidden bit
+                if ((quotient * 2) > denominator)
+                {
+                    whole += 1;
+
+                    if ((whole as u23) == 0) { result.exponent += 1; }
+                    // result.exponent += 0 ^ (((whole as u23) == 0) as u8);
+                }
             }
+            // truncate whole exponent delta bytes to (aproximately) fit in mantissa
+            else { for _ in PRECISION..exponent { whole /= 2; } }
+
+            result.mantissa = (whole as u23);
         }
+
+        dep::std::println(result);
 
         // let mut m = result.mantissa;
         // for _ in 0..PRECISION { if ((m & 1) == 1) { dep::std::println("1"); } else { dep::std::println("0"); } m >>= 1; }
@@ -123,6 +106,14 @@ impl Float32Fields
         result
     }
 }
+
+        // dep::std::println(f"magnitude_order: {magnitude_order}");
+        // dep::std::println(f"exponent: {exponent}");
+        // dep::std::println(f"whole: {whole}");
+        // dep::std::println(f"quotient: {quotient}");
+        // dep::std::println(f"fraction: {fraction}");
+        // dep::std::println(f"numerator: {numerator}");
+        // dep::std::println(f"denominator: {denominator}");
 
 impl Float32
 {
@@ -154,8 +145,8 @@ impl Float32
 
         // compute numerator by expanding mantissa
         let mut coefficient : u127 = FIVE_POWER_PRECISION;
-        let mut mantissa : u23 = self.mantissa;
         let mut numerator : u127 = 0;
+        let mut mantissa : u23 = self.mantissa;
         for _ in 0..PRECISION
         {
             if (mantissa != 0)
@@ -170,7 +161,7 @@ impl Float32
         let exponent : u8 = ((self.exponent - BIAS) as u8);
 
         // set the denominator magnitude order (a power of 10)
-        let mut ten : u127 = 1;
+        let mut denominator : u127 = 1;
         if ((exponent < BIAS_MINUS_PRECISION_PLUS_ONE) | (exponent > BIAS_PLUS_PRECISION_MINUS_ONE))
         {
             // TODO: create a test for this
@@ -178,66 +169,58 @@ impl Float32
             // let mut magnitude_order : u8 = PRECISION;
             // if (numerator != 0) { for _ in 1..PRECISION { if ((numerator % 10) == 10) { numerator /= 10; magnitude_order -= 1; } } }
 
-            ten = POWERS_OF_TEN[PRECISION]; // magnitude_order
+            denominator = POWERS_OF_TEN[PRECISION]; // magnitude_order
         }
 
         // add one (adjusted to denominator magnitude) to numerator
-        numerator += ten;
+        numerator += denominator;
 
         if (exponent > BIAS) { for _ in 0..(!exponent + 1) { numerator /= 2; } } // negative exponent, divide by 2^complement
         else                 { for _ in 0..exponent        { numerator *= 2; } } // positive exponent, multiply by 2^exponent
 
-        // dep::std::println(f"numerator: {numerator}");
-        // dep::std::println(f"ten: {ten}");
-        // dep::std::println(f"whole: {whole}");
-        // dep::std::println(f"exponent: {exponent}");
-        // dep::std::println(f"fraction: {fraction}");
-        // dep::std::println(f"magnitude_order: {magnitude_order}");
-
         // denominator is one <=> fraction part is missing; skip the division and return a whole number
         result.whole = numerator;
 
-        if (ten != 1)
+        if (denominator != 1)
         {
             // divide whole part by denominator to finish formula calculation, and complement when signed
-            result.whole /= ten;
+            result.whole /= denominator;
             if (self.sign == 1) { result.whole = (!result.whole + 1); }
 
             // compute fraction part
-            let mut fraction : u127 = (numerator % ten);
+            let mut fraction : u127 = (numerator % denominator);
             if (fraction != 0)
             {
-                let ten_o = POWERS_OF_TEN[output_precision];
-                let mut done = false;
+                let ten_o : u127 = POWERS_OF_TEN[output_precision];
+                let mut is_counting = true;
                 for _ in 0..PRECISION // magnitude_order
                 {
-                    let digit = (fraction % 10);
+                    // count leading zeros
+                    if (is_counting)
+                    {
+                        denominator /= 10;                                    // max fraction digit count is one less denominator magnitude order
+                        is_counting = ((fraction % denominator) == fraction); // remainder equals fraction <=> a leading zero
+                        if (is_counting) { result.leading_zeros += 1; }
+                        // result.leading_zeros += (0 ^ (is_counting as u4)); // add one (or zero when done)
+                    }
+
+                    // round up to specified output precision
+                    let digit : u127 = (fraction % 10);
                     if (fraction > ten_o)
                     {
-                        // count leading zeros
-                        if (done == false)
-                        {
-                            ten /= 10;                                  // max fraction digit count is one less magnitude_order
-                            done = ((fraction % ten) != fraction);      // when remainder equals fraction there is a leading zero
-                            result.leading_zeros += (1 ^ (done as u4)); // add one (or zero when done)
-                        }
-
-                        // round up to specified output precision
                         if (digit > 4) { fraction += 10; }
                         fraction /= 10;
-                        ten /= 10;
+                        denominator /= 10;
                     }
                     // truncate trailing zeros
-                    else if (digit == 0) { fraction /= 10; }
+                    else if (digit == 0) { fraction /= 10; denominator /= 10; }
                 }
 
                 result.fraction = fraction;
             }
         }
 
-        // dep::std::println("");
-        // dep::std::println(self);
-        // dep::std::println(result);
+        dep::std::println(result);
 
         result
     }
@@ -263,6 +246,7 @@ global BIAS_PLUS_ONE : u8 = 128;
 global BIAS_PLUS_PRECISION_MINUS_ONE : u8 = 139;
 global BIAS_MINUS_PRECISION_PLUS_ONE : u8 = 105;
 
+global TWO_POWER_PRECISION_MINUS_ONE : u23 = 4194304;
 global TWO_POWER_PRECISION : u127 = 8388608;
 global TWO_POWER_126 : u127 = 85070591730234615865843651857942052864;
 global FIVE_POWER_PRECISION : u127 = 11920928955078125;

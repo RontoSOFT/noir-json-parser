@@ -75,7 +75,7 @@ impl JSON
         for i in 0..len
         {
             let current = self.doc[i];
-            if (!found)
+            if (found == false)
             {
                 let len = prop.key.len();
                 found = (len == current.key.len());
@@ -87,7 +87,7 @@ impl JSON
             }
         }
 
-        if (!found) { self.doc = self.doc.push_back(prop); }
+        if (found == false) { self.doc = self.doc.push_back(prop); }
 
         self
     }
@@ -129,15 +129,15 @@ impl JSON
 
         for i in 0..SIZE
         {
-            if (!is_faulty)
+            if (is_faulty == false)
             {
                 byte = bytes[i];
 
                 let equals_byte = |x| { byte == x };
 
-                if (!WHITESPACES.any(equals_byte))
+                if (WHITESPACES.any(equals_byte) == false)
                 {
-                    if (!is_string)
+                    if (is_string == false)
                     {
                         if      (byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY)
                         {
@@ -164,7 +164,7 @@ impl JSON
                             if (byte == END_OBJECT) { count_objects -= 1; }
                             else                    { count_arrays -= 1; }
 
-                            if (!is_faulty & has_value & (byte_prev != BACKSLASH))
+                            if ((is_faulty == false) & has_value & (byte_prev != BACKSLASH))
                             {
 
                                 if (JSON::value_parsed(prop, is_number, is_literal, found_minus, found_digit_0, found_digit_1_9, found_fraction, found_fraction_digit, found_e, found_e_digit))
@@ -203,7 +203,7 @@ impl JSON
                         else if (byte == VALUE_DELIMITER)
                         {
                             is_faulty = !expect_value;
-                            if (!is_faulty & has_value & (byte_prev != BACKSLASH))
+                            if ((is_faulty == false) & has_value & (byte_prev != BACKSLASH))
                             {
                                 if (JSON::value_parsed(prop, is_number, is_literal, found_minus, found_digit_0, found_digit_1_9, found_fraction, found_fraction_digit, found_e, found_e_digit))
                                 {
