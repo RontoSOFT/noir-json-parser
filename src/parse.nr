@@ -24,6 +24,33 @@ use crate::globals::LITERALS_FALSE;
 
 impl JSON
 {
+    unconstrained
+    fn store_value(mut self, prop : Property) -> Self
+    {
+        // prop.print();
+
+        let mut found = false;
+        let len = self.doc.len();
+        for i in 0..len
+        {
+            let current = self.doc[i];
+            if (found == false)
+            {
+                let len = prop.key.len();
+                found = (len == current.key.len());
+                if (found)
+                {
+                    for j in 0..len { found &= (prop.key[j] == current.key[j]); }
+                    if (found) { self.doc[i].value = prop.value; }
+                }
+            }
+        }
+
+        if (found == false) { self.doc = self.doc.push_back(prop); }
+
+        self
+    }
+
     unconstrained pub fn parse<SIZE>(string : str<SIZE>) -> JSON
     {
     //     dep::std::println("");
@@ -98,30 +125,8 @@ impl JSON
                 *found_fraction_digit = false;
                 *found_fraction = false;
 
-                // prop.print();
-
-                let mut found = false;
-                for i in 0..json.doc.len()
-                {
-                    let current = json.doc[i];
-
-                    if (!found)
-                    {
-                        found = (prop.key.len() == current.key.len());
-                        if (found)
-                        {
-                            for j in 0..prop.key.len() { found &= (prop.key[j] == current.key[j]); }
-                            if (found) { json.doc[i].value = prop.value; }
-                        }
-                    }
-                }
-
-                if (!found)
-                {
-                    json.doc = json.doc.push_back(*prop);
-                }
-
-                { *prop = Property::new(); }
+                *json = json.store_value(*prop);
+                *prop = Property::new();
             }
         };
 
