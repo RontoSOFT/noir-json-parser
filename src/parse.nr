@@ -147,23 +147,23 @@ impl JSON
         let mut count_objects : Field = 0;
         let mut count_arrays : Field = 0;
 
-        let mut json = &mut JSON { doc: [] };
-        let mut prop = &mut Property::new();
+        let mut json = JSON { doc: [] };
+        let mut prop = Property::new();
 
-        let value_parsed = ||
+        let value_parsed = |value : [u8]|
         {
             // let v = (!*was_array);
             // if (!*was_array) // TODO: why does this fail?
             // {
-            //     is_faulty = JSON::value_faulty((*prop).value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
+            //     is_faulty = JSON::value_faulty(value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
             // }
             if (*is_number & !*was_array)
             {
-                is_faulty = JSON::is_faulty_number(prop.value, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
+                is_faulty = JSON::is_faulty_number(value, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
             }
             else if (*is_literal & !*was_array)
             {
-                is_faulty = JSON::is_faulty_literal(prop.value);
+                is_faulty = JSON::is_faulty_literal(value);
             }
 
             if (!is_faulty)
@@ -182,10 +182,9 @@ impl JSON
                 *found_e_digit = false;
                 *found_fraction_digit = false;
                 *found_fraction = false;
-
-                *json = json.store_value(*prop);
-                *prop = Property::new();
             }
+
+            !is_faulty
         };
 
         let bytes = string.as_bytes();
@@ -246,7 +245,14 @@ impl JSON
                                 prop.value = prop.value.push_back(byte); *has_value = true;
                             }
 
-                            if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH)) { value_parsed(); }
+                            if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH))
+                            {
+                                if (value_parsed(prop.value))
+                                {
+                                    json = json.store_value(prop);
+                                    prop = Property::new();
+                                }
+                            }
                         }
                         else if (byte == QUOTATION_MARK)
                         {
@@ -266,7 +272,14 @@ impl JSON
                         {
                             is_faulty = !*expect_value;
 
-                            if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH)) { value_parsed(); }
+                            if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH))
+                            {
+                                if (value_parsed(prop.value))
+                                {
+                                    json = json.store_value(prop);
+                                    prop = Property::new();
+                                }
+                            }
                             if (*expect_value) { prop.value = prop.value.push_back(byte); *has_value = true; }
                         }
                         else if (*expect_value)
@@ -336,6 +349,6 @@ impl JSON
             }
         }
 
-        if (is_faulty) { JSON { doc: [] } } else { *json }
+        if (is_faulty) { JSON { doc: [] } } else { json }
     }
 }
