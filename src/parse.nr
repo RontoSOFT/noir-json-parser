@@ -25,7 +25,7 @@ use crate::globals::LITERALS_FALSE;
 impl JSON
 {
     unconstrained
-    fn value_faulty
+    fn is_faulty_value
     (
         value : [u8]
     ,   was_array : bool
@@ -44,47 +44,23 @@ impl JSON
 
         if (is_number & !was_array)
         {
-            is_faulty = JSON::is_faulty_number(value, found_minus, found_digit_0, found_digit_1_9, found_fraction, found_fraction_digit, found_e, found_e_digit);
+            is_faulty  = (found_e & !found_e_digit);
+            is_faulty |= (found_fraction & !found_fraction_digit);
+            is_faulty |= (found_minus & !(found_digit_0 | found_digit_1_9));
         }
         else if (is_literal & !was_array)
         {
-            is_faulty = JSON::is_faulty_literal(value);
+            is_faulty = true;
+
+            let len = value.len();
+            let first = value[0];
+            if (len == 4)
+            {
+                if      (first == LITERALS_NULL[0]) { is_faulty = !value.eq_array(LITERALS_NULL); }
+                else if (first == LITERALS_TRUE[0]) { is_faulty = !value.eq_array(LITERALS_TRUE); }
+            }
+            else if ((len == 5) & (first == LITERALS_FALSE[0])) { is_faulty = !value.eq_array(LITERALS_FALSE); }
         }
-
-        is_faulty
-    }
-
-    unconstrained
-    fn is_faulty_number
-    (
-        value : [u8]
-    ,   found_minus : bool
-    ,   found_digit_0 : bool
-    ,   found_digit_1_9 : bool
-    ,   found_fraction : bool
-    ,   found_fraction_digit : bool
-    ,   found_e : bool
-    ,   found_e_digit : bool
-    ) -> bool
-    {
-        (found_e & !found_e_digit)
-        | (found_fraction & !found_fraction_digit)
-        | (found_minus & !(found_digit_0 | found_digit_1_9))
-    }
-
-    unconstrained
-    fn is_faulty_literal(value : [u8]) -> bool
-    {
-        let mut is_faulty = true;
-
-        let len = value.len();
-        let first = value[0];
-        if (len == 4)
-        {
-            if      (first == LITERALS_NULL[0]) { is_faulty = !value.eq_array(LITERALS_NULL); }
-            else if (first == LITERALS_TRUE[0]) { is_faulty = !value.eq_array(LITERALS_TRUE); }
-        }
-        else if ((len == 5) & (first == LITERALS_FALSE[0])) { is_faulty = !value.eq_array(LITERALS_FALSE); }
 
         is_faulty
     }
@@ -152,19 +128,7 @@ impl JSON
 
         let value_parsed = |value : [u8]|
         {
-            // let v = (!*was_array);
-            // if (!*was_array) // TODO: why does this fail?
-            // {
-            //     is_faulty = JSON::value_faulty(value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
-            // }
-            if (*is_number & !*was_array)
-            {
-                is_faulty = JSON::is_faulty_number(value, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
-            }
-            else if (*is_literal & !*was_array)
-            {
-                is_faulty = JSON::is_faulty_literal(value);
-            }
+            is_faulty = JSON::is_faulty_value(value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
 
             if (!is_faulty)
             {
