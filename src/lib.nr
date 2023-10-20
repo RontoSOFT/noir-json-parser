@@ -14,16 +14,13 @@ struct Property
 
 struct JSON
 {
-    doc: [ Property ]
+    doc : [Property]
 }
 
 impl Property
 {
     unconstrained
-    fn new() -> Self
-    {
-        Property { key: [], value: [] }
-    }
+    fn none() -> Self { Self { key: [], value: [] } }
 
     unconstrained
     fn print(self)

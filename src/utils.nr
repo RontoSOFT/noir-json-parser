@@ -15,28 +15,42 @@ pub fn print_bytes<N>(label : str<N>, bytes : [u8])
     if (N != 0) { dep::std::println(label); }
 
     dep::std::println("{");
-    for i in 0..bytes.len() { let s : str<1> = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
+    let len : u64 = (bytes.len() as u64);
+    for i in 0..len { let s : str<1> = chars[bytes[i] - 32]; dep::std::println(f"    {s}"); }
     dep::std::println("}");
 }
 
+#[builtin]
 unconstrained
 pub fn to_array<N>(sl : [u8]) -> [u8; N]
 {
-    let index = if ((N as u64) <= (sl.len() as u64)) { N } else { sl.len() };
-
     let mut bytes : [u8; N] = [0; N];
-    for i in 0..index { bytes[i] = sl[i]; }
+    for i in 0..N { bytes[i] = sl[i]; }
     bytes
 }
 
 trait ByteArraySliceEquality
 {
+    fn eq(self, right : [u8]) -> bool;
     fn eq_array(self, right : [u8]) -> bool;
     fn eq_string(self, right : str) -> bool;
 }
 
 impl ByteArraySliceEquality for [u8]
 {
+    unconstrained
+    pub fn eq(self, right : [u8]) -> bool
+    {
+        let len = self.len();
+        if (len == right.len())
+        {
+            let mut equal = true;
+            for i in 0..len { equal &= (self[i] == right[i]); }
+            equal
+        }
+        else { false }
+    }
+
     unconstrained
     pub fn eq_array<N>(self, right : [u8; N]) -> bool
     {
@@ -50,8 +64,5 @@ impl ByteArraySliceEquality for [u8]
     }
 
     unconstrained
-    pub fn eq_string<N>(self, right : str<N>) -> bool
-    {
-        self.eq_array(right.as_bytes())
-    }
+    pub fn eq_string<N>(self, right : str<N>) -> bool { self.eq_array(right.as_bytes()) }
 }
