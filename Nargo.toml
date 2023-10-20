@@ -2,6 +2,6 @@
 name = "noir_json_parser"
 type = "lib"
 authors = [""]
-compiler_version = "0.16.0-aztec.1"
+compiler_version = "v0.17.0"
 
 [dependencies]
