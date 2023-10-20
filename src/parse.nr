@@ -126,31 +126,6 @@ impl JSON
         let mut json = JSON { doc: [] };
         let mut prop = Property::new();
 
-        let value_parsed = |value : [u8]|
-        {
-            is_faulty = JSON::is_faulty_value(value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit);
-
-            if (!is_faulty)
-            {
-                *is_whitespace = false;
-                *has_value = false;
-                *is_number = false;
-                *is_literal = false;
-                *expect_value = false;
-                *found_minus = false;
-                *found_digit_0 = false;
-                *found_digit_1_9 = false;
-                *found_e = false;
-                *found_e_minus = false;
-                *found_e_plus = false;
-                *found_e_digit = false;
-                *found_fraction_digit = false;
-                *found_fraction = false;
-            }
-
-            !is_faulty
-        };
-
         let bytes = string.as_bytes();
         let mut byte : u8 = 0;
         let mut byte_prev : u8 = 0;
@@ -211,8 +186,23 @@ impl JSON
 
                             if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH))
                             {
-                                if (value_parsed(prop.value))
+                                if (JSON::is_faulty_value(prop.value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit) == false)
                                 {
+                                    *is_whitespace = false;
+                                    *has_value = false;
+                                    *is_number = false;
+                                    *is_literal = false;
+                                    *expect_value = false;
+                                    *found_minus = false;
+                                    *found_digit_0 = false;
+                                    *found_digit_1_9 = false;
+                                    *found_e = false;
+                                    *found_e_minus = false;
+                                    *found_e_plus = false;
+                                    *found_e_digit = false;
+                                    *found_fraction_digit = false;
+                                    *found_fraction = false;
+
                                     json = json.store_value(prop);
                                     prop = Property::new();
                                 }
@@ -238,8 +228,23 @@ impl JSON
 
                             if (!is_faulty & *has_value & !*is_array & (byte_prev != BACKSLASH))
                             {
-                                if (value_parsed(prop.value))
+                                if (JSON::is_faulty_value(prop.value, *was_array, *is_number, *is_literal, *found_minus, *found_digit_0, *found_digit_1_9, *found_fraction, *found_fraction_digit, *found_e, *found_e_digit) == false)
                                 {
+                                    *is_whitespace = false;
+                                    *has_value = false;
+                                    *is_number = false;
+                                    *is_literal = false;
+                                    *expect_value = false;
+                                    *found_minus = false;
+                                    *found_digit_0 = false;
+                                    *found_digit_1_9 = false;
+                                    *found_e = false;
+                                    *found_e_minus = false;
+                                    *found_e_plus = false;
+                                    *found_e_digit = false;
+                                    *found_fraction_digit = false;
+                                    *found_fraction = false;
+
                                     json = json.store_value(prop);
                                     prop = Property::new();
                                 }
