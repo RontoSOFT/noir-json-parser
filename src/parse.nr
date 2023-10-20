@@ -58,9 +58,6 @@ impl JSON
         let mut json = &mut JSON { doc: [] };
         let mut prop = &mut Property::new();
 
-        let push_key   = |byte : u8| { prop.key = prop.key.push_back(byte); };
-        let push_value = |byte : u8| { prop.value = prop.value.push_back(byte); *has_value = true; };
-
         let value_parsed = ||
         {
             *is_faulty = !*has_value;
@@ -159,9 +156,9 @@ impl JSON
                             {
                                 *expect_value = true;
                                 *is_faulty &= (!*was_array & (count_arrays == 0));
-                                count_arrays += 1;
                                 *is_array = true;
-                                push_value(byte);
+                                count_arrays += 1;
+                                prop.value = prop.value.push_back(byte); *has_value = true;
                             }
                         }
                         else if ((byte == END_OBJECT) | (byte == END_ARRAY))
@@ -185,7 +182,7 @@ impl JSON
                                 *was_array = true;
                                 *was_object = false;
 
-                                push_value(byte);
+                                prop.value = prop.value.push_back(byte); *has_value = true;
                             }
 
                             if (*has_value & !*is_array & (byte_prev != BACKSLASH)) { value_parsed(); }
@@ -195,7 +192,7 @@ impl JSON
                             *is_faulty = (*is_number | *is_literal) & !*is_array;
                             *is_string = true;
 
-                            if (*expect_value) { push_value(byte); }
+                            if (*expect_value) { prop.value = prop.value.push_back(byte); *has_value = true; }
                         }
                         else if (byte == KEY_DELIMITER)
                         {
@@ -209,7 +206,7 @@ impl JSON
                             *is_faulty = !*expect_value;
 
                             if (*has_value & !*is_array & (byte_prev != BACKSLASH)) { value_parsed(); }
-                            if (*expect_value) { push_value(byte); }
+                            if (*expect_value) { prop.value = prop.value.push_back(byte); *has_value = true; }
                         }
                         else if (*expect_value)
                         {
@@ -253,7 +250,7 @@ impl JSON
                             { *is_number  = (!*is_literal & (byte_prev != BACKSLASH)); }
                             { *is_faulty |= (!*is_number & !*is_literal); }
 
-                            push_value(byte);
+                            prop.value = prop.value.push_back(byte); *has_value = true;
                         }
                         else { *is_faulty = (byte != BACKSLASH); }
                     }
@@ -261,14 +258,14 @@ impl JSON
                     {
                         *is_string = ((byte != QUOTATION_MARK) | (*expect_value & (byte_prev == BACKSLASH)));
 
-                        if      (*expect_value)                    { push_value(byte); }
-                        else if (*is_string & (byte != BACKSLASH)) { push_key(byte); }
+                        if      (*expect_value)                    { prop.value = prop.value.push_back(byte); *has_value = true; }
+                        else if (*is_string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
                     }
                 }
                 else if (*is_string)
                 {
-                    if (*expect_value) { push_value(byte); }
-                    else               { push_key(byte); }
+                    if (*expect_value) { prop.value = prop.value.push_back(byte); *has_value = true; }
+                    else               { prop.key = prop.key.push_back(byte); }
                 }
                 else { *is_whitespace = *has_value; }
 
