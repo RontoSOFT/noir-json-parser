@@ -32,6 +32,6 @@ jobs:
           cd ../
           mv noir-json-parser lib
           cd tests
-          ../nargo test --show-output
+          ../nargo test --silence-warnings
           cd ../
           mv lib noir-json-parser
