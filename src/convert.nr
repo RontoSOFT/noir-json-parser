@@ -115,76 +115,37 @@ impl Conversions for [u8]
     }
 
     unconstrained
-    pub fn asField(self) -> Option<Field>
+    fn asField(self: [u8]) -> Option<Field>
     {
         let mut result = Option::none();
 
-        let N : u64 = (self.len() as u64);
-        let mut valid = // ensure at least one digit is valid
-        (N < 78) &
-        if (N == 1) { (self[0] != BYTE_NULL) & (self[0] != MINUS) & (self[0] != PLUS) }
-        else        { ((self[0] != BYTE_NULL) & (self[0] != PLUS)) | ((self[0] == MINUS) & (self[1] != BYTE_NULL) & (self[1] != PLUS)) };
+        let option = getOffsets(self);
 
-        if (!valid) { result } // early return guard
-
-        let mut value : Field = 0;
-        let mut units : Field = 1;
-        let mut exponent : Field = 0;
-        let mut checked_exponent = false;
-        let mut has_exponent = false;
-
-        for i in 0..N
+        if (option.is_some())
         {
-            if (valid)
+            let offsets : [u64; 5] = option.unwrap_unchecked();
+
+            // expect whole to have at least one digit, and decimal point to be missing
+            if ((offsets[0] < offsets[1]) & (offsets[2] == offsets[3]))
             {
-                let index : u64 = (N - 1 - i); // walking property value self in reverse
-                let byte : u8 = self[index];
+                let mut whole : Field = 0;
+                whole = getWhole(self, offsets[0], offsets[1]);
+                if (offsets[0] == 1) { whole = -whole; }
 
-                if ((byte > 0x2F) & (byte < 0x3A))
+                if (offsets[4] != 0)
                 {
-                    value += (((byte - 0x30) as Field) * units); // convert ASCII byte to integer digit number
-                    units *= 10;
-                }
-                else if ((byte == MINUS) | (byte == PLUS) | (byte == CHAR_e) | (byte == CHAR_E))
-                {
-                    if (!checked_exponent)
-                    {
-                        for j in 0..index { if (!has_exponent) { has_exponent = ((self[index - j] == CHAR_e) | (self[index - j] == CHAR_E)); } }
-                        checked_exponent = true;
-                    }
+                    let mut power : Field = 0;
+                    let mut exponent : Field = 1;
 
-                    if (has_exponent & (exponent == 0))
-                    {
-                        valid = ((N > 2) & (units != 1)); // 0e-0 or 0e+0 or 0e0 and value is at least 0
+                    power = getWhole(self, offsets[4], (self.len() as u64));
 
-                        if (valid)
-                        {
-                            exponent = 1;
-                            for _ in 0..value { exponent *= 10; }
-                            if (byte == MINUS) { exponent = (1 / exponent); }
-                            // TODO: why does the line below fail a test asField::property_number_minus_three_zero_e_minus_one_as_field ?
-                            // exponent = if (byte == MINUS) { 10.pow_32(-value) } else { 10.pow_32(value) };
-                        }
+                    for _ in 0..power { exponent *= 10; }
 
-                        value = 0;
-                        units = 1;
-                    }
+                    if (self[offsets[4] - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
                 }
-                else
-                {
-                    valid  = ((byte == CHAR_e) | (byte == CHAR_E));
-                    valid |= ((value == 0) & (byte == BYTE_NULL));  // nulls accepted only at the end of array
-                    valid |= ((index == 0) & (byte == MINUS));      // minus accepted only at the start of the array when exponent is missing
-                }
+
+                result = Option::some(whole);
             }
-        }
-
-        if (valid)
-        {
-            if (exponent != 0)    { value *= exponent; }
-            if (self[0] == MINUS) { value = -value; }
-
-            result = Option::some(value);
         }
 
         result
