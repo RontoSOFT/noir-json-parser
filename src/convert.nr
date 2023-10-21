@@ -55,7 +55,7 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
         let mut exponent = false;
         let mut exponent_minus = false;
         let mut exponent_plus = false;
-        for i in (minus as u64)..N
+        for i in offsets[0]..N
         {
             if (valid)
             {
@@ -115,7 +115,7 @@ impl Conversions for [u8]
     }
 
     unconstrained
-    fn asField(self: [u8]) -> Option<Field>
+    pub fn asField(self: [u8]) -> Option<Field>
     {
         let mut result = Option::none();
 
@@ -156,9 +156,10 @@ impl Conversions for [u8]
     {
         let mut result : [[u8]] = [];
         let mut value : [u8] = [];
-        let mut count : u8 = 0;
 
         let len : u64 = ((self.len() - 1) as u64);
+        let mut count : u8 = 0;
+
         for i in 1..len // 1st byte is '[', last byte is ']'
         {
             let byte = self[i];
@@ -185,9 +186,10 @@ impl JSON
     unconstrained
     pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
     {
+        let key_bytes = key.as_bytes();
         let len : u64 = (self.doc.len() as u64);
         let mut index = -1;
-        for i in 0..len { if (index == -1) { if (self.doc[i].key.eq_string(key)) { index = i; } } }
+        for i in 0..len { if (index == -1) { if (self.doc[i].key.eq_array(key_bytes)) { index = i; } } }
 
         if (index != -1) { Option::some(self.doc[index].value) } else { Option::none() }
     }
@@ -197,7 +199,7 @@ impl JSON
     {
         let option = self.bytesOf(key);
 
-        if (option.is_some()) { option.unwrap_unchecked().asBool() } else { Option::none() }
+        if (option.is_some()) { self.bytesOf(key).unwrap().asBool() } else { Option::none() }
     }
 
     unconstrained

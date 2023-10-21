@@ -3,9 +3,6 @@ mod utils;
 mod parse;
 mod convert;
 
-use crate::globals::BYTE_NULL;
-use crate::utils::print_bytes;
-
 struct Property
 {
     key : [u8],
@@ -25,7 +22,7 @@ impl Property
     unconstrained
     fn print(self)
     {
-        print_bytes("key", self.key);
-        print_bytes("value", self.value);
+        dep::std::println("key"); self.key.print();
+        dep::std::println("value"); self.value.print();
     }
 }

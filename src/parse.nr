@@ -75,7 +75,8 @@ impl JSON
         self
     }
 
-    unconstrained pub fn parse<SIZE>(string : str<SIZE>) -> JSON
+    unconstrained
+    pub fn parse<SIZE>(string : str<SIZE>) -> JSON
     {
     //     dep::std::println("");
     //     dep::std::println(string);
