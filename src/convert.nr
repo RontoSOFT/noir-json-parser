@@ -113,20 +113,21 @@ impl Conversions for [u8]
     {
         let mut result : [[u8]] = [];
         let mut value : [u8] = [];
-        let mut count : Field = 0;
+        let mut count : u8 = 0;
 
         let len : u64 = ((self.len() - 1) as u64);
         for i in 1..len // 1st byte is '[', last byte is ']'
         {
-            if      (self[i] == BEGIN_ARRAY) { count += 1; }
-            else if ((self[i] == END_ARRAY)) { count -= 1; }
+            let byte = self[i];
+            count += (0 ^ ((byte == BEGIN_ARRAY) as u8));
+            count -= (0 ^ ((byte == END_ARRAY) as u8));
 
-            if ((self[i] == VALUE_DELIMITER) & (count == 0))
+            if ((byte == VALUE_DELIMITER) & (count == 0))
             {
                 result = result.push_back(value);
                 value = [];
             }
-            else { value = value.push_back(self[i]); }
+            else { value = value.push_back(byte); }
         }
 
         result = result.push_back(value);
@@ -139,7 +140,7 @@ impl JSON
 {
     // linear search of json keys to return an Option slice of the key's value bytes
     unconstrained
-    pub fn bytesOf<KEY_SIZE>(self, key : str<KEY_SIZE>) -> Option<[u8]>
+    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
     {
         let len : u64 = (self.doc.len() as u64);
         let mut index = -1;
@@ -180,16 +181,11 @@ impl JSON
     unconstrained
     pub fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
     {
-        let mut result : Option<[[u8]]> = Option::none();
+        let option = self.bytesOf(key);
 
-        if (N == 0) { if (self.doc.len() == 1) { result = self.doc[0].value.asSlice(); } }
-        else
-        {
-            let option = self.bytesOf(key);
-
-            if (option.is_some()) { result = option.unwrap_unchecked().asSlice(); }
-        }
-
-        result
+        if (option.is_some()) { option.unwrap_unchecked().asSlice() } else { Option::none() }
     }
+
+    unconstrained
+    pub fn asSlice(self) -> Option<[[u8]]> { if (self.doc.len() == 1) { self.doc[0].value.asSlice() } else { Option::none() } }
 }
