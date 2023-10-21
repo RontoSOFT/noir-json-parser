@@ -3,16 +3,98 @@ use dep::std::option::Option;
 use crate::JSON;
 
 use crate::globals::BYTE_NULL;
-use crate::globals::PLUS;
-use crate::globals::MINUS;
-use crate::globals::CHAR_e;
-use crate::globals::CHAR_E;
-use crate::globals::LITERALS_NULL;
-use crate::globals::LITERALS_TRUE;
-use crate::globals::LITERALS_FALSE;
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::VALUE_DELIMITER;
+use crate::globals::LITERALS_TRUE;
+use crate::globals::LITERALS_NULL;
+use crate::globals::LITERALS_FALSE;
+use crate::globals::MINUS;
+use crate::globals::DECIMAL_POINT;
+use crate::globals::CHAR_e;
+use crate::globals::CHAR_E;
+use crate::globals::PLUS;
+
+unconstrained
+fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
+{
+    let mut it : u64 = (end - 1); // walking in reverse
+    let mut whole : Field = ((bytes[it] - 0x30) as Field); // first digit is last in array
+    let mut units : Field = 10;
+
+    for _ in start..it
+    {
+        it -= 1;
+        whole += (((bytes[it] - 0x30) as Field) * units); // convert ASCII byte to integer digit number
+        units *= 10;
+    }
+
+    whole
+}
+
+unconstrained
+fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
+{
+    let mut result = Option::none();
+
+    let N : u64 = (bytes.len() as u64);
+    let first : u8 = bytes[0];
+
+    let minus = (first == MINUS);
+
+    let mut valid =
+    (N < 78) & // ensure at least one digit is valid
+    if (N == 1) { (first != BYTE_NULL) & !minus & (first != PLUS) }
+    else        { ((first != BYTE_NULL) & (first != PLUS)) | (minus & (bytes[1] != BYTE_NULL) & (bytes[1] != PLUS)) };
+
+    if (valid)
+    {
+        let mut offsets : [u64; 5] = [(minus as u64), N, 0, 0, 0];
+
+        let mut decimal_point = false;
+        let mut exponent = false;
+        let mut exponent_minus = false;
+        let mut exponent_plus = false;
+        for i in (minus as u64)..N
+        {
+            if (valid)
+            {
+                let byte = bytes[i];
+
+                if (byte == DECIMAL_POINT)
+                {
+                    valid = !(decimal_point | exponent);
+                    decimal_point = true;
+
+                    offsets[1] = i;       // end of whole bytes
+                    offsets[2] = (i + 1); // start of fraction bytes
+                }
+                else if ((byte == CHAR_e) | (byte == CHAR_E))
+                {
+                    if (decimal_point) { offsets[3] = i; } // end of fraction bytes
+                    else               { offsets[1] = i; } // end of whole bytes
+
+                    offsets[4] = (i + 1); // start of exponent bytes
+
+                    valid = !exponent;
+                    exponent = true;
+                }
+                else if ((byte == MINUS) | (byte == PLUS))
+                {
+                    offsets[4] = (i + 1); // start of exponent bytes
+                    valid = (exponent & !(exponent_minus | exponent_plus));
+                    exponent_plus = (byte == MINUS);
+                    exponent_minus = (byte == PLUS);
+                }
+                else { valid = ((byte > 0x2F) & (byte < 0x3A)); }
+            }
+        }
+
+        if (valid) { result = Option::some(offsets); }
+    }
+
+    result
+}
 
 trait Conversions
 {
