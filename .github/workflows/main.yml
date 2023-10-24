@@ -23,6 +23,9 @@ jobs:
           version=$(grep 'compiler_version[ ]*=[ ]*' Nargo.toml | awk -F '"' '{print $2}')
 
           cd ../
+
+          echo Downloading Nargo $version
+
           url="https://github.com/noir-lang/noir/releases/download/${version}/nargo-x86_64-unknown-linux-gnu.tar.gz"
           curl -L "$url" | tar -xz -C .
           chmod +x nargo
@@ -31,7 +34,10 @@ jobs:
         run: |
           cd ../
           mv noir-json-parser lib
+
           cd tests
           ../nargo test --silence-warnings
+
+          # git cleanup: rename folder for auto-delete
           cd ../
           mv lib noir-json-parser
