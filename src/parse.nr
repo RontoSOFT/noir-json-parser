@@ -26,38 +26,15 @@ use crate::globals::PLUS;
 impl JSON
 {
     unconstrained
-    fn value_parsable
-    (
-        value : [u8]
-    ,   was_array : bool
-    ,   literal : bool
-    ,   number : bool
-    ,   minus : bool
-    ,   digit_0 : bool
-    ,   digit_1_9 : bool
-    ,   fraction : bool
-    ,   fraction_digit : bool
-    ,   e_E : bool
-    ,   e_digit : bool
-    ) -> bool
+    fn literal_parsable(value : [u8]) -> bool
     {
-        let mut faulty = false;
+        let mut OK = false;
 
-        if (number & !was_array)
-        {
-            faulty  = (e_E & !e_digit);
-            faulty |= (fraction & !fraction_digit);
-            faulty |= (minus & !(digit_0 | digit_1_9));
-        }
-        else if (literal & !was_array)
-        {
-            faulty = !(value.eq_array(LITERALS_TRUE));
+        if      (value[0] == LITERALS_TRUE[0])  { OK = value.eq_array(LITERALS_TRUE); }
+        else if (value[0] == LITERALS_NULL[0])  { OK = value.eq_array(LITERALS_NULL); }
+        else if (value[0] == LITERALS_FALSE[0]) { OK = value.eq_array(LITERALS_FALSE); }
 
-            if      (faulty & value.eq_array(LITERALS_NULL))  { faulty = false; }
-            else if (faulty & value.eq_array(LITERALS_FALSE)) { faulty = false; }
-        }
-
-        !faulty
+        OK
     }
 
     unconstrained
@@ -88,35 +65,36 @@ impl JSON
         let mut prop = Property::none();
 
         let mut key_delimiters : Field = 0;
+        let mut value_delimiters : Field = 0;
         let mut objects : Field = 0;
         let mut arrays : Field = 0;
 
         let mut byte : u8 = 0;
         let mut byte_prev : u8 = 0;
 
-        let mut faulty = false;
+        let mut OK = true;
         let mut string = false;
         let mut number = false;
         let mut literal = false;
         let mut whitespace = false;
-        let mut array = false;
         let mut was_array = false;
         let mut was_object = false;
         let mut has_value = false;
+        let mut has_array_value = false;
         let mut expect_value = false;
         let mut minus = false;
         let mut digit_0 = false;
         let mut digit_1_9 = false;
         let mut e_E = false;
+        let mut fraction = false;
+        let mut fraction_digit = false;
         let mut e_minus = false;
         let mut e_plus = false;
         let mut e_digit = false;
-        let mut fraction = false;
-        let mut fraction_digit = false;
 
         for i in 0..SIZE
         {
-            if (!faulty)
+            if (OK)
             {
                 byte = bytes[i];
 
@@ -124,53 +102,82 @@ impl JSON
 
                 if (!WHITESPACES.any(equals_byte))
                 {
-                    if (!string)
+                    if (string)
+                    {
+                        string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
+
+                        if      (expect_value)                 { prop.value = prop.value.push_back(byte); has_value = true; has_array_value = true; }
+                        else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
+                    }
+                    else
                     {
                         if      ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                         {
-                            faulty = (number | literal);// & (!was_array & !was_object);
+                            let begin_array = (byte == BEGIN_ARRAY);
 
-                            if (byte == BEGIN_OBJECT)
+                            OK = !(number & literal & (arrays == 0));
+
+                            if ((arrays != 0) | begin_array)
                             {
-                                faulty |= ((objects != 0) & !was_object);
-                                objects += 1;
+                                prop.value = prop.value.push_back(byte);
+                                has_value = true;
+                                has_array_value = (arrays != 0);
+                            }
+
+                            if (begin_array)
+                            {
+                                OK |= ((objects != 0) & expect_value);
+
+                                arrays += 1;
+                                value_delimiters = 0;
+                                expect_value = true;
                             }
                             else
                             {
-                                expect_value = true;
-                                faulty &= (!was_array & (arrays == 0));
-                                arrays += 1;
-                                array = true;
-
-                                prop.value = prop.value.push_back(byte); has_value = true;
+                                OK &= ((objects == 0) | was_object | was_array);
+                                objects += 1;
                             }
                         }
                         else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                         {
-                            faulty = (!has_value & (json.doc.len() == key_delimiters));
+                            let end_array = (byte == END_ARRAY);
 
-                            if (byte == END_OBJECT)
+                            OK = has_value;
+
+                            if (end_array)
                             {
-                                faulty &= !was_array;
-                                objects -= 1;
-                                // object = (objects != 0);
-                                was_array = false;
-                                was_object = true;
+                                OK &= ((arrays != 0) & ((value_delimiters == 0) | has_array_value));
+                                OK &= ((objects == 0) | (prop.key.len() != 0));
+
+                                arrays -= 1;
+                                was_array = true;
+                                has_array_value = OK;
+                                was_object = false;
                             }
                             else
                             {
-                                faulty &= (arrays == 0);
-                                arrays -= 1;
-                                array = (arrays != 0);
-                                was_array = true;
-                                was_object = false;
+                                OK |= was_array;
+                                OK &= (objects != 0);
 
-                                prop.value = prop.value.push_back(byte); has_value = true;
+                                objects -= 1;
+                                was_array = false;
+                                was_object = (arrays == 0);
                             }
 
-                            if (!faulty & has_value & !array & (byte_prev != BACKSLASH))
+                            if ((arrays != 0) | end_array)
                             {
-                                if (JSON::value_parsable(prop.value, was_array, literal, number, minus, digit_0, digit_1_9, fraction, fraction_digit, e_E, e_digit))
+                                prop.value = prop.value.push_back(byte);
+                                has_value = true;
+                                has_array_value = (arrays != 0);
+                            }
+
+                            if (OK & has_value & (arrays == 0) & (byte_prev != BACKSLASH))
+                            {
+                                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                                else if (literal) { OK = JSON::literal_parsable(prop.value); }
+                                OK |= was_array;
+
+                                if (OK)
                                 {
                                     has_value = false;
                                     expect_value = false;
@@ -194,25 +201,37 @@ impl JSON
                         }
                         else if (byte == QUOTATION_MARK)
                         {
-                            faulty = ((number | literal) & !array);
+                            OK = !((number | literal) & (arrays == 0));
                             string = true;
 
-                            if (expect_value) { prop.value = prop.value.push_back(byte); has_value = true; }
+                            if (expect_value)
+                            {
+                                prop.value = prop.value.push_back(byte);
+                                has_value = true;
+                                has_array_value = (arrays == 0);
+                            }
                         }
                         else if (byte == KEY_DELIMITER)
                         {
-                            faulty = expect_value;
-                            expect_value = (byte_prev != BACKSLASH);
+                            OK = !expect_value;
 
                             key_delimiters += ((true ^ string) as Field);
+                            expect_value = (byte_prev != BACKSLASH);
                         }
                         else if (byte == VALUE_DELIMITER)
                         {
-                            faulty = !expect_value;
+                            OK = (expect_value & has_array_value);
 
-                            if (!faulty & has_value & !array & (byte_prev != BACKSLASH))
+                            value_delimiters += 1;
+                            has_array_value = false;
+
+                            if (OK & has_value & (arrays == 0) & (byte_prev != BACKSLASH))
                             {
-                                if (JSON::value_parsable(prop.value, was_array, literal, number, minus, digit_0, digit_1_9, fraction, fraction_digit, e_E, e_digit))
+                                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                                else if (literal) { OK = JSON::literal_parsable(prop.value); }
+                                OK |= was_array;
+
+                                if (OK)
                                 {
                                     has_value = false;
                                     expect_value = false;
@@ -233,67 +252,66 @@ impl JSON
                                     prop = Property::none();
                                 }
                             }
-
-                            if (expect_value) { prop.value = prop.value.push_back(byte); has_value = true; }
+                            else if (expect_value)
+                            {
+                                prop.value = prop.value.push_back(byte);
+                                has_value = true;
+                            }
                         }
                         else if (expect_value)
                         {
-                            faulty = whitespace;
+                            OK = !whitespace;
 
                             if (DIGITS_0_9.any(equals_byte))
                             {
-                                faulty |= (digit_0 & !(fraction | e_E));
+                                OK &= (!digit_0 | (digit_0 & (fraction | e_E)));
+
                                 digit_0 |= ((byte == ZERO) & !digit_1_9);
                                 digit_1_9 |= !digit_0;
-                                e_digit = e_E;
                                 fraction_digit = fraction;
+                                e_digit = e_E;
                             }
                             else if (byte == DECIMAL_POINT)
                             {
-                                faulty |= !(digit_0 | digit_1_9);
+                                OK &= (digit_0 | digit_1_9);
                                 fraction = true;
                             }
                             else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
                             {
-                                faulty |= (e_E | (fraction & !fraction_digit));
+                                OK &= !e_E;
                                 e_E = true;
                             }
                             else if (byte == MINUS)
                             {
-                                faulty |= ((!e_E & (minus | digit_0 | digit_1_9)) | e_minus | e_digit);
+                                OK &= (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_digit)));
+
                                 minus = true;
                                 e_minus = e_E;
                             }
                             else if (byte == PLUS)
                             {
-                                faulty |= (!e_E | e_plus | e_digit);
+                                OK &= (e_E & !e_plus & !e_digit);
                                 e_plus = true;
                             }
                             else
                             {
                                 literal = (LITERALS.any(equals_byte) & !(digit_0 | digit_1_9 | whitespace));
-                                faulty |= !(literal | array);
+                                OK &= (literal | (arrays != 0));
                             }
 
-                            number  = !(literal | (byte_prev == BACKSLASH));
-                            faulty |= !(number | literal);
+                            number = !(literal | (byte_prev == BACKSLASH));
+                            OK &= (number | literal);
 
                             prop.value = prop.value.push_back(byte);
                             has_value = true;
+                            has_array_value = true;
                         }
-                        else { faulty = (byte != BACKSLASH); }
-                    }
-                    else
-                    {
-                        string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
-
-                        if      (expect_value)                 { prop.value = prop.value.push_back(byte); has_value = true; }
-                        else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
+                        else { OK = (byte == BACKSLASH); }
                     }
                 }
                 else if (string)
                 {
-                    if (expect_value) { prop.value = prop.value.push_back(byte); has_value = true; }
+                    if (expect_value) { prop.value = prop.value.push_back(byte); has_value = true; has_array_value = true; }
                     else              { prop.key = prop.key.push_back(byte); }
                 }
                 else { whitespace = has_value; }
@@ -304,6 +322,6 @@ impl JSON
             }
         }
 
-        if (faulty) { JSON { doc: [] } } else { json }
+        if (OK) { json } else { JSON { doc: [] } }
     }
 }
