@@ -73,6 +73,7 @@ impl JSON
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
+        let mut expect_value = true;
         let mut string = false;
         let mut number = false;
         let mut literal = false;
@@ -81,7 +82,6 @@ impl JSON
         let mut was_object = false;
         let mut has_value = false;
         let mut has_array_value = false;
-        let mut expect_value = false;
         let mut minus = false;
         let mut digit_0 = false;
         let mut digit_1_9 = false;
@@ -106,7 +106,12 @@ impl JSON
                     {
                         string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
 
-                        if      (expect_value)                 { prop.value = prop.value.push_back(byte); has_value = true; has_array_value = true; }
+                        if (expect_value)
+                        {
+                            prop.value = prop.value.push_back(byte);
+                            has_value = true;
+                            has_array_value = true;
+                        }
                         else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
                     }
                     else
@@ -135,7 +140,9 @@ impl JSON
                             else
                             {
                                 OK &= ((objects == 0) | was_object | was_array);
+
                                 objects += 1;
+                                expect_value = (arrays != 0);
                             }
                         }
                         else if ((byte == END_OBJECT) | (byte == END_ARRAY))
@@ -208,7 +215,7 @@ impl JSON
                             {
                                 prop.value = prop.value.push_back(byte);
                                 has_value = true;
-                                has_array_value = (arrays == 0);
+                                has_array_value = true;
                             }
                         }
                         else if (byte == KEY_DELIMITER)
@@ -220,7 +227,7 @@ impl JSON
                         }
                         else if (byte == VALUE_DELIMITER)
                         {
-                            OK = (expect_value & has_array_value);
+                            OK = (((objects != 0) | ((arrays != 0) & has_array_value)) & expect_value);
 
                             value_delimiters += 1;
                             has_array_value = false;
@@ -284,6 +291,7 @@ impl JSON
                             else if (byte == MINUS)
                             {
                                 OK &= (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_digit)));
+                                OK &= (i != (SIZE - 1));
 
                                 minus = true;
                                 e_minus = e_E;
@@ -311,8 +319,13 @@ impl JSON
                 }
                 else if (string)
                 {
-                    if (expect_value) { prop.value = prop.value.push_back(byte); has_value = true; has_array_value = true; }
-                    else              { prop.key = prop.key.push_back(byte); }
+                    if (expect_value)
+                    {
+                        prop.value = prop.value.push_back(byte);
+                        has_value = true;
+                        has_array_value = true;
+                    }
+                    else { prop.key = prop.key.push_back(byte); }
                 }
                 else { whitespace = has_value; }
 
@@ -322,6 +335,24 @@ impl JSON
             }
         }
 
-        if (OK) { json } else { JSON { doc: [] } }
+        OK &= ((objects == 0) & (arrays == 0));
+
+        if (OK)
+        {
+            if (has_value)
+            {
+                if (number)
+                {
+                    OK  = (!fraction | (fraction & fraction_digit));
+                    OK &= (!e_E | (e_E & e_digit));
+                }
+                else if (literal) { OK = JSON::literal_parsable(prop.value); }
+
+                if (OK) { json.doc = [prop]; }
+            }
+
+            json
+        }
+        else { JSON { doc: [] } }
     }
 }
