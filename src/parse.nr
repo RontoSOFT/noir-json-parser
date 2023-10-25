@@ -206,7 +206,7 @@ impl JSON
                     }
                     else if (byte == DECIMAL_POINT)
                     {
-                        OK = number;
+                        OK = (number & !fraction);
                         fraction = true;
                     }
                     else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
@@ -229,7 +229,7 @@ impl JSON
                     }
                     else
                     {
-                        literal = (LITERALS.any(equals_byte) & !(digit_0 | digit_1_9 | whitespace));
+                        literal = (LITERALS.any(equals_byte) & !number);
                         OK = (literal | array);
                     }
 
