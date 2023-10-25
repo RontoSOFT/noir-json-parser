@@ -69,7 +69,6 @@ impl JSON
         let mut objects : Field = 0;
         let mut arrays : Field = 0;
 
-        let mut byte : u8 = 0;
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
@@ -91,12 +90,10 @@ impl JSON
         let mut e_plus = false;
         let mut e_digit = false;
 
-        for i in 0..SIZE
+        for byte in bytes
         {
             if (OK)
             {
-                byte = bytes[i];
-
                 let equals_byte = |x| { byte == x };
 
                 if (!WHITESPACES.any(equals_byte))
@@ -105,11 +102,7 @@ impl JSON
                     {
                         string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
 
-                        if (expect_value)
-                        {
-                            prop.value = prop.value.push_back(byte);
-                            array_value = true;
-                        }
+                        if      (expect_value)                 { prop.value = prop.value.push_back(byte); array_value = true; }
                         else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
                     }
                     else
@@ -153,7 +146,6 @@ impl JSON
 
                                 arrays -= 1;
                                 was_array = true;
-                                array_value = OK;
                                 was_object = false;
                             }
                             else
@@ -174,10 +166,8 @@ impl JSON
 
                             if (OK & (arrays == 0) & (byte_prev != BACKSLASH))
                             {
-                                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                                else if (literal) { OK = JSON::literal_parsable(prop.value); }
-
-                                OK |= (was_array & (prop.value.len() != 0));
+                                if      (number & !was_array)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                                else if (literal & !was_array) { OK = JSON::literal_parsable(prop.value); }
 
                                 if (OK)
                                 {
@@ -227,10 +217,8 @@ impl JSON
 
                             if (OK & (arrays == 0) & (byte_prev != BACKSLASH))
                             {
-                                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                                else if (literal) { OK = JSON::literal_parsable(prop.value); }
-
-                                OK |= (was_array & (prop.value.len() != 0));
+                                if      (number & !was_array)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                                else if (literal & !was_array) { OK = JSON::literal_parsable(prop.value); }
 
                                 if (OK)
                                 {
@@ -256,12 +244,11 @@ impl JSON
                         }
                         else if (expect_value)
                         {
-                            OK = !whitespace;
-
                             if (DIGITS_0_9.any(equals_byte))
                             {
-                                OK &= (!digit_0 | (digit_0 & (fraction | e_E)));
+                                OK = (!digit_0 | (digit_0 & (fraction | e_E)));
 
+                                number = true;
                                 digit_0 |= ((byte == ZERO) & !digit_1_9);
                                 digit_1_9 |= !digit_0;
                                 fraction_digit = fraction;
@@ -269,35 +256,34 @@ impl JSON
                             }
                             else if (byte == DECIMAL_POINT)
                             {
-                                OK &= (digit_0 | digit_1_9);
+                                OK = number;
                                 fraction = true;
                             }
                             else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
                             {
-                                OK &= !e_E;
+                                OK = (number & !e_E);
                                 e_E = true;
                             }
                             else if (byte == MINUS)
                             {
-                                OK &= (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_digit)));
-                                OK &= (i != (SIZE - 1));
+                                OK = (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_digit)));
 
+                                number = true;
                                 minus = true;
                                 e_minus = e_E;
                             }
                             else if (byte == PLUS)
                             {
-                                OK &= (e_E & !e_plus & !e_digit);
+                                OK = (e_E & !e_plus & !e_digit);
                                 e_plus = true;
                             }
                             else
                             {
                                 literal = (LITERALS.any(equals_byte) & !(digit_0 | digit_1_9 | whitespace));
-                                OK &= (literal | (arrays != 0));
+                                OK = (literal | (arrays != 0));
                             }
 
-                            number = !(literal | (byte_prev == BACKSLASH));
-                            OK &= (number | literal);
+                            OK &= !whitespace;
 
                             prop.value = prop.value.push_back(byte);
                             array_value = true;
@@ -307,14 +293,10 @@ impl JSON
                 }
                 else if (string)
                 {
-                    if (expect_value)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = true;
-                    }
-                    else { prop.key = prop.key.push_back(byte); }
+                    if (expect_value) { prop.value = prop.value.push_back(byte); array_value = true; }
+                    else              { prop.key = prop.key.push_back(byte); }
                 }
-                else { whitespace = (prop.value.len() != 0); }
+                else { whitespace = (number | literal); }
 
                 byte_prev = byte;
 
@@ -328,11 +310,7 @@ impl JSON
         {
             if (prop.value.len() != 0)
             {
-                if (number)
-                {
-                    OK  = (!fraction | (fraction & fraction_digit));
-                    OK &= (!e_E | (e_E & e_digit));
-                }
+                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | (fraction & fraction_digit)) & (!e_E | (e_E & e_digit))); }
                 else if (literal) { OK = JSON::literal_parsable(prop.value); }
 
                 if (OK) { json.doc = [prop]; }
