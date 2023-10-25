@@ -10,7 +10,6 @@ use crate::globals::KEY_DELIMITER;
 use crate::globals::VALUE_DELIMITER;
 use crate::globals::QUOTATION_MARK;
 use crate::globals::BACKSLASH;
-use crate::globals::WHITESPACES;
 use crate::globals::LITERALS;
 use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
@@ -192,7 +191,7 @@ impl JSON
 
                     if (!parse_complete) { prop.value = prop.value.push_back(byte); }
                 }
-                else if (!WHITESPACES.any(equals_byte) & (byte != BACKSLASH))
+                else if ((byte != 0x09) & (byte != 0x0A) & (byte != 0x0D) & (byte != 0x20) & (byte != BACKSLASH))
                 {
                     if (DIGITS_0_9.any(equals_byte))
                     {

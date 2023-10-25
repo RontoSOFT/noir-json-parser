@@ -9,9 +9,6 @@ global VALUE_DELIMITER : u8 = 0x2C; // , comma
 global QUOTATION_MARK  : u8 = 0x27; // ' single quote
 global BACKSLASH       : u8 = 0x5C; // \ reverse solidus
 
-//                               ( )   \t    \n    \r
-global WHITESPACES : [u8; 4] = [ 0x20, 0x09, 0x0A, 0x0D ];
-
 //                            a     e     f     l     n     r     s     t     u
 global LITERALS : [u8; 9] = [ 0x61, 0x65, 0x66, 0x6c, 0x6e, 0x72, 0x73, 0x74, 0x75];
 
