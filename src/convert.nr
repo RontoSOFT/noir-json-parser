@@ -197,15 +197,25 @@ impl JSON
     unconstrained
     pub fn getBool<N>(self, key : str<N>) -> Option<bool>
     {
-        let option = self.bytesOf(key);
+        let mut result : Option<bool> = Option::none();
 
-        if (option.is_some()) { self.bytesOf(key).unwrap().asBool() } else { Option::none() }
+        let option = self.bytesOf(key);
+        if (option.is_some())
+        {
+            // a literal was parsed correctly if set as property value;
+            // need to check only the first byte to match t (0x74), n (0x6e) or f (0x66)
+            let byte : u8 = option.unwrap_unchecked()[0];
+            if ((byte == 0x74) | (byte == 0x6e) | (byte == 0x66)) { result = Option::some((byte == 0x74)); }
+        }
+
+        result
     }
 
     unconstrained
     pub fn getInteger<N>(self, key : str<N>) -> Option<i54>
     {
         let mut result : Option<i54> = Option::none();
+
         let option = self.bytesOf(key);
         if (option.is_some())
         {

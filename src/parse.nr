@@ -27,13 +27,10 @@ impl JSON
     unconstrained
     fn literal_parsable(value : [u8]) -> bool
     {
-        let mut OK = false;
-
-        if      (value[0] == LITERALS_TRUE[0])  { OK = value.eq_array(LITERALS_TRUE); }
-        else if (value[0] == LITERALS_NULL[0])  { OK = value.eq_array(LITERALS_NULL); }
-        else if (value[0] == LITERALS_FALSE[0]) { OK = value.eq_array(LITERALS_FALSE); }
-
-        OK
+        if      (value[0] == LITERALS_TRUE[0])  { value.eq_array(LITERALS_TRUE) }
+        else if (value[0] == LITERALS_NULL[0])  { value.eq_array(LITERALS_NULL) }
+        else if (value[0] == LITERALS_FALSE[0]) { value.eq_array(LITERALS_FALSE) }
+        else                                    { false }
     }
 
     unconstrained
