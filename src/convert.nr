@@ -240,7 +240,4 @@ impl JSON
 
         if (option.is_some()) { option.unwrap_unchecked().asSlice() } else { Option::none() }
     }
-
-    unconstrained
-    pub fn asSlice(self) -> Option<[[u8]]> { if (self.doc.len() == 1) { self.doc[0].value.asSlice() } else { Option::none() } }
 }
