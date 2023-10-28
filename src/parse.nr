@@ -255,8 +255,11 @@ impl JSON
 
                 if (parse_complete)
                 {
-                    if      (number & !was_array)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                    else if (literal & !was_array) { OK = JSON::literal_parsable(prop.value); }
+                    if (!was_array)
+                    {
+                        if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                        else if (literal) { OK = JSON::literal_parsable(prop.value); }
+                    }
 
                     if (OK)
                     {
@@ -292,7 +295,7 @@ impl JSON
         {
             if (prop.value.len() != 0)
             {
-                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | (fraction & fraction_digit)) & (!e_E | (e_E & e_digit))); }
+                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                 else if (literal) { OK = JSON::literal_parsable(prop.value); }
 
                 if (OK) { json.doc = [prop]; }
