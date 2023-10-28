@@ -10,12 +10,10 @@ use crate::globals::KEY_DELIMITER;
 use crate::globals::VALUE_DELIMITER;
 use crate::globals::QUOTATION_MARK;
 use crate::globals::BACKSLASH;
-use crate::globals::LITERALS;
 use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_FALSE;
 use crate::globals::MINUS;
-use crate::globals::DIGITS_0_9;
 use crate::globals::ZERO;
 use crate::globals::DECIMAL_POINT;
 use crate::globals::CHAR_e;
@@ -39,7 +37,7 @@ impl JSON
         // prop.print();
 
         let len : u64 = (self.doc.len() as u64);
-        let mut index = -1;
+        let mut index : u64 = (0-1);
         for i in 0..len { if (index == -1) { if (prop.key.eq(self.doc[i].key)) { index = i; } } }
 
         if (index == -1) { self.doc = self.doc.push_back(prop); }
@@ -92,8 +90,6 @@ impl JSON
         {
             if (OK)
             {
-                let equals_byte = |b| { byte == b };
-
                 if (string)
                 {
                     string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
@@ -213,7 +209,7 @@ impl JSON
                 }
                 else if ((byte != 0x09) & (byte != 0x0A) & (byte != 0x0D) & (byte != 0x20) & (byte != BACKSLASH))
                 {
-                    if (DIGITS_0_9.any(equals_byte))
+                    if ((byte - ZERO) < 10)
                     {
                         OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
                         OK &= ((objects == 0) | (prop.key.len() != 0) | (array & (objects != 0)));
@@ -249,7 +245,7 @@ impl JSON
                     }
                     else
                     {
-                        literal = (LITERALS.any(equals_byte) & !number);
+                        literal = (!number & (((byte - 0x72) < 4) | (byte == 0x61) | (byte == 0x65) | (byte == 0x66) | (byte == 0x6C) | (byte == 0x6E)));
                         OK = (literal | array);
                     }
 

@@ -9,15 +9,9 @@ global VALUE_DELIMITER : u8 = 0x2C; // , comma
 global QUOTATION_MARK  : u8 = 0x27; // ' single quote
 global BACKSLASH       : u8 = 0x5C; // \ reverse solidus
 
-//                            a     e     f     l     n     r     s     t     u
-global LITERALS : [u8; 9] = [ 0x61, 0x65, 0x66, 0x6C, 0x6E, 0x72, 0x73, 0x74, 0x75];
-
 global LITERALS_NULL  : [u8; 4] = [ 0x6E, 0x75, 0x6C, 0x6C ];
 global LITERALS_TRUE  : [u8; 4] = [ 0x74, 0x72, 0x75, 0x65 ];
 global LITERALS_FALSE : [u8; 5] = [ 0x66, 0x61, 0x6C, 0x73, 0x65 ];
-
-//                               0     1     2     3     4     5     6     7     8     9
-global DIGITS_0_9 : [u8; 10] = [ 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39 ];
 
 global MINUS         : u8 = 0x2D; // -
 global ZERO          : u8 = 0x30; // 0
