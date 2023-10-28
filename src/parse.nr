@@ -75,7 +75,6 @@ impl JSON
         let mut array_value = false;
         let mut parse_complete = false;
         let mut was_array = false;
-        let mut was_object = false;
         let mut minus = false;
         let mut digit_0 = false;
         let mut digit_1_9 = false;
@@ -118,7 +117,7 @@ impl JSON
                     }
                     else
                     {
-                        OK = ((objects == 0) | was_object | was_array | array);
+                        OK = ((objects == 0) | was_array | array);
 
                         objects += 1;
                         expect_value = array;
@@ -137,7 +136,6 @@ impl JSON
                         arrays -= 1;
                         array = (arrays != 0);
                         was_array = true;
-                        was_object = false;
                     }
                     else
                     {
@@ -145,7 +143,6 @@ impl JSON
 
                         objects -= 1;
                         was_array = false;
-                        was_object = !array;
                     }
 
                     if (array | end_array)
