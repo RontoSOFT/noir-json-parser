@@ -19,13 +19,13 @@ unconstrained
 fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
 {
     let mut it : u64 = (end - 1); // walking in reverse
-    let mut whole : Field = ((bytes[it] - 0x30) as Field); // first digit is last in array
+    let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
     let mut units : Field = 10;
 
     for _ in start..it
     {
         it -= 1;
-        whole += (((bytes[it] - 0x30) as Field) * units); // convert ASCII byte to integer digit number
+        whole += (((bytes[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
         units *= 10;
     }
 
