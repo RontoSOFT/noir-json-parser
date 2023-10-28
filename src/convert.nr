@@ -10,6 +10,7 @@ use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_NULL;
 use crate::globals::LITERALS_FALSE;
 use crate::globals::MINUS;
+use crate::globals::ZERO;
 use crate::globals::DECIMAL_POINT;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
@@ -63,11 +64,11 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
 
                 if (byte == DECIMAL_POINT)
                 {
-                    valid = !(decimal_point | exponent);
-                    decimal_point = true;
-
                     offsets[1] = i;       // end of whole bytes
                     offsets[2] = (i + 1); // start of fraction bytes
+
+                    valid = !(decimal_point | exponent);
+                    decimal_point = true;
                 }
                 else if ((byte == CHAR_e) | (byte == CHAR_E))
                 {
@@ -82,11 +83,13 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
                 else if ((byte == MINUS) | (byte == PLUS))
                 {
                     offsets[4] = (i + 1); // start of exponent bytes
+
                     valid = (exponent & !(exponent_minus | exponent_plus));
-                    exponent_plus = (byte == MINUS);
-                    exponent_minus = (byte == PLUS);
+
+                    exponent_minus = (byte == MINUS);
+                    exponent_plus = !exponent_minus;
                 }
-                else { valid = ((byte > 0x2F) & (byte < 0x3A)); }
+                else { valid = ((byte - ZERO) < 10); }
             }
         }
 
@@ -128,8 +131,7 @@ impl Conversions for [u8]
             // expect whole to have at least one digit, and decimal point to be missing
             if ((offsets[0] < offsets[1]) & (offsets[2] == offsets[3]))
             {
-                let mut whole : Field = 0;
-                whole = getWhole(self, offsets[0], offsets[1]);
+                let mut whole : Field = getWhole(self, offsets[0], offsets[1]);
                 if (offsets[0] == 1) { whole = -whole; }
 
                 if (offsets[4] != 0)
@@ -188,7 +190,7 @@ impl JSON
     {
         let key_bytes = key.as_bytes();
         let len : u64 = (self.doc.len() as u64);
-        let mut index = -1;
+        let mut index : u64 = (0-1);
         for i in 0..len { if (index == -1) { if (self.doc[i].key.eq_array(key_bytes)) { index = i; } } }
 
         if (index != -1) { Option::some(self.doc[index].value) } else { Option::none() }
@@ -203,9 +205,9 @@ impl JSON
         if (option.is_some())
         {
             // a literal was parsed correctly if set as property value;
-            // need to check only the first byte to match t (0x74), n (0x6e) or f (0x66)
+            // need to check only the first byte to match t (0x74), n (0x6E) or f (0x66)
             let byte : u8 = option.unwrap_unchecked()[0];
-            if ((byte == 0x74) | (byte == 0x6e) | (byte == 0x66)) { result = Option::some((byte == 0x74)); }
+            if ((byte == 0x74) | (byte == 0x6E) | (byte == 0x66)) { result = Option::some((byte == 0x74)); }
         }
 
         result
