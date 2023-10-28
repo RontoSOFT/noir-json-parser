@@ -99,7 +99,7 @@ impl JSON
                     string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
 
                     if      (expect_value)                 { prop.value = prop.value.push_back(byte); array_value = true; }
-                    else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
+                    else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte);}
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -122,7 +122,7 @@ impl JSON
                     }
                     else
                     {
-                        OK = ((objects == 0) | was_object | was_array);
+                        OK = ((objects == 0) | was_object | was_array | array);
 
                         objects += 1;
                         expect_value = array;
@@ -134,7 +134,8 @@ impl JSON
 
                     if (end_array)
                     {
-                        OK  = ((objects == 0) | (prop.key.len() != 0));
+                        let has_key = (prop.key.len() != 0);
+                        OK  = (has_key | (objects == 0) | (!has_key & (objects == 1)));
                         OK &= (array & ((value_delimiters == 0) | array_value));
 
                         arrays -= 1;
@@ -173,27 +174,49 @@ impl JSON
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = !expect_value;
+                    OK = (!expect_value | (array & (objects != 0)));
 
                     key_delimiters += ((true ^ string) as Field);
                     expect_value = (byte_prev != BACKSLASH);
+
+                    if (array)
+                    {
+                        prop.value = prop.value.push_back(byte);
+                        array_value = true;
+                    }
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
-                    OK = (((objects != 0) | (array & array_value)) & expect_value);
+                    OK = (((objects != 0) | array) & array_value & expect_value);
 
                     value_delimiters += 1;
                     array_value = false;
                     parse_complete = (OK & !array & (byte_prev != BACKSLASH));
 
-                    if (!parse_complete) { prop.value = prop.value.push_back(byte); }
+                    if (!parse_complete)
+                    {
+                        prop.value = prop.value.push_back(byte);
+
+                        literal = false;
+                        number = false;
+                        minus = false;
+                        digit_0 = false;
+                        digit_1_9 = false;
+                        fraction = false;
+                        fraction_digit = false;
+                        e_E = false;
+                        e_minus = false;
+                        e_plus = false;
+                        e_digit = false;
+                        whitespace = false;
+                    }
                 }
                 else if ((byte != 0x09) & (byte != 0x0A) & (byte != 0x0D) & (byte != 0x20) & (byte != BACKSLASH))
                 {
                     if (DIGITS_0_9.any(equals_byte))
                     {
                         OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
-                        OK &= ((objects == 0) | (prop.key.len() != 0));
+                        OK &= ((objects == 0) | (prop.key.len() != 0) | (array & (objects != 0)));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
