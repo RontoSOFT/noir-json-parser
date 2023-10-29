@@ -10,25 +10,38 @@ use crate::globals::KEY_DELIMITER;
 use crate::globals::VALUE_DELIMITER;
 use crate::globals::QUOTATION_MARK;
 use crate::globals::BACKSLASH;
-use crate::globals::LITERALS_NULL;
-use crate::globals::LITERALS_TRUE;
-use crate::globals::LITERALS_FALSE;
+use crate::globals::TAB;
+use crate::globals::NEWLINE;
+use crate::globals::RETURN;
+use crate::globals::SPACE;
 use crate::globals::MINUS;
+use crate::globals::PLUS;
 use crate::globals::ZERO;
-use crate::globals::DECIMAL_POINT;
+use crate::globals::POINT;
+use crate::globals::CHAR_a;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
-use crate::globals::PLUS;
+use crate::globals::CHAR_f;
+use crate::globals::CHAR_l;
+use crate::globals::CHAR_n;
+use crate::globals::CHAR_r;
+use crate::globals::CHAR_s;
+use crate::globals::CHAR_t;
+use crate::globals::CHAR_u;
 
 impl JSON
 {
     unconstrained
     fn literal_parsable(value : [u8]) -> bool
     {
-        if      (value[0] == LITERALS_TRUE[0])  { value.eq_array(LITERALS_TRUE) }
-        else if (value[0] == LITERALS_NULL[0])  { value.eq_array(LITERALS_NULL) }
-        else if (value[0] == LITERALS_FALSE[0]) { value.eq_array(LITERALS_FALSE) }
-        else                                    { false }
+        let mut OK = false;
+        let len : Field = value.len();
+
+        if      ((len == 4) & (value[0] == CHAR_t)) { OK = ((value[1] == CHAR_r) & (value[2] == CHAR_u) & (value[3] == CHAR_e)); }
+        else if ((len == 4) & (value[0] == CHAR_n)) { OK = ((value[1] == CHAR_u) & (value[2] == CHAR_l) & (value[3] == CHAR_l)); }
+        else if ((len == 5) & (value[0] == CHAR_f)) { OK = ((value[1] == CHAR_a) & (value[2] == CHAR_l) & (value[3] == CHAR_s) & (value[4] == CHAR_e)); }
+
+        OK
     }
 
     unconstrained
@@ -205,7 +218,7 @@ impl JSON
                         whitespace = false;
                     }
                 }
-                else if ((byte != 0x09) & (byte != 0x0A) & (byte != 0x0D) & (byte != 0x20) & (byte != BACKSLASH))
+                else if ((byte != TAB) & (byte != NEWLINE) & (byte != RETURN) & (byte != SPACE) & (byte != BACKSLASH))
                 {
                     if ((byte - ZERO) < 10)
                     {
@@ -218,7 +231,7 @@ impl JSON
                         fraction_digit = fraction;
                         e_digit = e_E;
                     }
-                    else if (byte == DECIMAL_POINT)
+                    else if (byte == POINT)
                     {
                         OK = (number & !fraction);
                         fraction = true;
@@ -243,7 +256,7 @@ impl JSON
                     }
                     else
                     {
-                        literal = (!number & (((byte - 0x72) < 4) | (byte == 0x61) | (byte == 0x65) | (byte == 0x66) | (byte == 0x6C) | (byte == 0x6E)));
+                        literal = (!number & (((byte - CHAR_r) < 4) | (byte == CHAR_a) | (byte == CHAR_e) | (byte == CHAR_f) | (byte == CHAR_l) | (byte == CHAR_n)));
                         OK = (literal | array);
                     }
 

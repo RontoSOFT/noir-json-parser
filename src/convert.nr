@@ -8,15 +8,15 @@ use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
 use crate::globals::END_OBJECT;
 use crate::globals::VALUE_DELIMITER;
-use crate::globals::LITERALS_TRUE;
-use crate::globals::LITERALS_NULL;
-use crate::globals::LITERALS_FALSE;
+use crate::globals::PLUS;
 use crate::globals::MINUS;
+use crate::globals::POINT;
 use crate::globals::ZERO;
-use crate::globals::DECIMAL_POINT;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
-use crate::globals::PLUS;
+use crate::globals::CHAR_f;
+use crate::globals::CHAR_n;
+use crate::globals::CHAR_t;
 
 unconstrained
 fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
@@ -64,7 +64,7 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
             {
                 let byte = bytes[i];
 
-                if (byte == DECIMAL_POINT)
+                if (byte == POINT)
                 {
                     offsets[1] = i;       // end of whole bytes
                     offsets[2] = (i + 1); // start of fraction bytes
@@ -113,10 +113,8 @@ impl Conversions for [u8]
     unconstrained
     pub fn asBool(self) -> Option<bool>
     {
-        if      (self.eq_array(LITERALS_TRUE))  { Option::some(true) }
-        else if (self.eq_array(LITERALS_NULL))  { Option::some(false) }
-        else if (self.eq_array(LITERALS_FALSE)) { Option::some(false) }
-        else                                    { Option::none() }
+        if (JSON::literal_parsable(self)) { Option::some(self[0] == CHAR_t) }
+        else { Option::none() }
     }
 
     unconstrained
@@ -209,9 +207,9 @@ impl JSON
         if (option.is_some())
         {
             // a literal was parsed correctly if set as property value;
-            // need to check only the first byte to match t (0x74), n (0x6E) or f (0x66)
+            // need to check only the first byte to match t, n or f
             let byte : u8 = option.unwrap_unchecked()[0];
-            if ((byte == 0x74) | (byte == 0x6E) | (byte == 0x66)) { result = Option::some((byte == 0x74)); }
+            if ((byte == CHAR_t) | (byte == CHAR_n) | (byte == CHAR_f)) { result = Option::some(byte == CHAR_t); }
         }
 
         result
