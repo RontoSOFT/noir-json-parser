@@ -12,11 +12,16 @@ use crate::globals::PLUS;
 use crate::globals::MINUS;
 use crate::globals::POINT;
 use crate::globals::ZERO;
+use crate::globals::CHAR_a;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
 use crate::globals::CHAR_f;
+use crate::globals::CHAR_l;
 use crate::globals::CHAR_n;
+use crate::globals::CHAR_r;
+use crate::globals::CHAR_s;
 use crate::globals::CHAR_t;
+use crate::globals::CHAR_u;
 
 unconstrained
 fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
@@ -113,8 +118,17 @@ impl Conversions for [u8]
     unconstrained
     pub fn asBool(self) -> Option<bool>
     {
-        if (JSON::literal_parsable(self)) { Option::some(self[0] == CHAR_t) }
-        else { Option::none() }
+        let mut OK = false;
+        let len : Field = self.len();
+
+        let len_4 = (len == 4);
+        let t = (self[0] == CHAR_t);
+
+        if      (len_4 & t)                        { OK = ((self[1] == CHAR_r) & (self[2] == CHAR_u) & (self[3] == CHAR_e)); }
+        else if (len_4 & (self[0] == CHAR_n))      { OK = ((self[1] == CHAR_u) & (self[2] == CHAR_l) & (self[3] == CHAR_l)); }
+        else if ((len == 5) & (self[0] == CHAR_f)) { OK = ((self[1] == CHAR_a) & (self[2] == CHAR_l) & (self[3] == CHAR_s) & (self[4] == CHAR_e)); }
+
+        if (OK) { Option::some(t) } else { Option::none() }
     }
 
     unconstrained

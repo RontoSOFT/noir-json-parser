@@ -18,43 +18,32 @@ use crate::globals::MINUS;
 use crate::globals::PLUS;
 use crate::globals::ZERO;
 use crate::globals::POINT;
-use crate::globals::CHAR_a;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
-use crate::globals::CHAR_f;
-use crate::globals::CHAR_l;
-use crate::globals::CHAR_n;
-use crate::globals::CHAR_r;
-use crate::globals::CHAR_s;
-use crate::globals::CHAR_t;
-use crate::globals::CHAR_u;
+
+global FIELD_tr    : Field = 0x7472;
+global FIELD_tru   : Field = 0x747275;
+global FIELD_true  : Field = 0x74727565;
+global FIELD_nu    : Field = 0x6E75;
+global FIELD_nul   : Field = 0x6E756C;
+global FIELD_null  : Field = 0x6E756C6C;
+global FIELD_fa    : Field = 0x6661;
+global FIELD_fal   : Field = 0x66616C;
+global FIELD_fals  : Field = 0x66616C73;
+global FIELD_false : Field = 0x66616C7365;
 
 impl JSON
 {
-    unconstrained
-    fn literal_parsable(value : [u8]) -> bool
-    {
-        let mut OK = false;
-        let len : Field = value.len();
-
-        if      ((len == 4) & (value[0] == CHAR_t)) { OK = ((value[1] == CHAR_r) & (value[2] == CHAR_u) & (value[3] == CHAR_e)); }
-        else if ((len == 4) & (value[0] == CHAR_n)) { OK = ((value[1] == CHAR_u) & (value[2] == CHAR_l) & (value[3] == CHAR_l)); }
-        else if ((len == 5) & (value[0] == CHAR_f)) { OK = ((value[1] == CHAR_a) & (value[2] == CHAR_l) & (value[3] == CHAR_s) & (value[4] == CHAR_e)); }
-
-        OK
-    }
-
     unconstrained
     fn store_value(mut self, prop : Property) -> Self
     {
         // prop.print();
 
         let len : u64 = (self.doc.len() as u64);
-        let mut index : u64 = (0-1);
-        for i in 0..len { if (index == -1) { if (prop.key.eq(self.doc[i].key)) { index = i; } } }
+        let mut found = false;
+        for i in 0..len { if (!found) { if (prop.key.eq(self.doc[i].key)) { self.doc[i].value = prop.value; found = true; } } }
 
-        if (index == -1) { self.doc = self.doc.push_back(prop); }
-        else             { self.doc[index].value = prop.value; }
+        if (!found) { self.doc = self.doc.push_back(prop); }
 
         self
     }
@@ -75,6 +64,7 @@ impl JSON
         let mut value_delimiters : Field = 0;
         let mut objects : Field = 0;
         let mut arrays : Field = 0;
+        let mut literal_field : Field = 0;
 
         let mut byte_prev : u8 = 0;
 
@@ -144,7 +134,7 @@ impl JSON
                     if (end_array)
                     {
                         let has_key = (prop.key.len() != 0);
-                        OK  = (has_key | (objects == 0) | (!has_key & (objects == 1)));
+                        OK  = (has_key | (objects == 0) | (!has_key & (objects != 0))); // == 1
                         OK &= (array & ((value_delimiters == 0) | array_value));
 
                         arrays -= 1;
@@ -169,7 +159,7 @@ impl JSON
                 }
                 else if (byte == QUOTATION_MARK)
                 {
-                    OK = (!(number | literal) | array);
+                    OK = (array | !(number | literal));
 
                     string = true;
 
@@ -181,9 +171,9 @@ impl JSON
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = (!expect_value | (array & (objects != 0)));
+                    OK = (((objects != 0) & array) | !expect_value);
 
-                    key_delimiters += ((true ^ string) as Field);
+                    key_delimiters += (string as Field);
                     expect_value = (byte_prev != BACKSLASH);
 
                     if (array)
@@ -204,6 +194,7 @@ impl JSON
                     {
                         prop.value = prop.value.push_back(byte);
 
+                        literal_field = 0;
                         literal = false;
                         number = false;
                         minus = false;
@@ -223,7 +214,7 @@ impl JSON
                     if ((byte - ZERO) < 10)
                     {
                         OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
-                        OK &= ((objects == 0) | (prop.key.len() != 0) | (array & (objects != 0)));
+                        OK &= ((objects == 0) | (prop.key.len() != 0) | ((objects != 0) & array));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
@@ -256,8 +247,24 @@ impl JSON
                     }
                     else
                     {
-                        literal = (!number & (((byte - CHAR_r) < 4) | (byte == CHAR_a) | (byte == CHAR_e) | (byte == CHAR_f) | (byte == CHAR_l) | (byte == CHAR_n)));
-                        OK = (literal | array);
+                        literal_field *= 256;
+                        literal_field += (byte as Field);
+
+                        literal  = (literal_field == 0x74);
+                        literal |= (literal_field == FIELD_tr);
+                        literal |= (literal_field == FIELD_tru);
+                        literal |= (literal_field == FIELD_true);
+                        literal |= (literal_field == 0x6E);
+                        literal |= (literal_field == FIELD_nu);
+                        literal |= (literal_field == FIELD_nul);
+                        literal |= (literal_field == FIELD_null);
+                        literal |= (literal_field == 0x66);
+                        literal |= (literal_field == FIELD_fa);
+                        literal |= (literal_field == FIELD_fal);
+                        literal |= (literal_field == FIELD_fals);
+                        literal |= (literal_field == FIELD_false);
+
+                        OK = (!number & literal);
                     }
 
                     OK &= !whitespace;
@@ -269,14 +276,12 @@ impl JSON
 
                 if (parse_complete)
                 {
-                    if (!was_array)
-                    {
-                        if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                        else if (literal) { OK = JSON::literal_parsable(prop.value); }
-                    }
+                    if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
+                    else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
                     if (OK)
                     {
+                        literal_field = 0;
                         expect_value = false;
                         literal = false;
                         number = false;
@@ -310,7 +315,7 @@ impl JSON
             if (prop.value.len() != 0)
             {
                 if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                else if (literal) { OK = JSON::literal_parsable(prop.value); }
+                else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
                 if (OK) { json.doc = [prop]; }
             }
