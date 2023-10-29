@@ -5,6 +5,8 @@ use crate::JSON;
 use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
+use crate::globals::BEGIN_OBJECT;
+use crate::globals::END_OBJECT;
 use crate::globals::VALUE_DELIMITER;
 use crate::globals::LITERALS_TRUE;
 use crate::globals::LITERALS_NULL;
@@ -160,15 +162,17 @@ impl Conversions for [u8]
         let mut value : [u8] = [];
 
         let len : u64 = ((self.len() - 1) as u64);
-        let mut count : u8 = 0;
+        let mut objects : u8 = 0;
+        let mut arrays : u8 = 0;
 
         for i in 1..len // 1st byte is '[', last byte is ']'
         {
             let byte = self[i];
-            count += (0 ^ ((byte == BEGIN_ARRAY) as u8));
-            count -= (0 ^ ((byte == END_ARRAY) as u8));
 
-            if ((byte == VALUE_DELIMITER) & (count == 0))
+            arrays  += (((byte == BEGIN_ARRAY) as u8)  - ((byte == END_ARRAY) as u8));
+            objects += (((byte == BEGIN_OBJECT) as u8) - ((byte == END_OBJECT) as u8));
+
+            if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
             {
                 result = result.push_back(value);
                 value = [];
