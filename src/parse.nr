@@ -126,6 +126,7 @@ impl JSON
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                 {
                     let end_array = (byte == END_ARRAY);
+                    let has_value = (prop.value.len() != 0);
 
                     if (end_array)
                     {
@@ -139,7 +140,7 @@ impl JSON
                     }
                     else
                     {
-                        OK = ((objects != 0) & (was_array | (prop.value.len() != 0)));
+                        OK = ((objects != 0) & (was_array | has_value));
 
                         objects -= 1;
                         was_array = false;
@@ -151,7 +152,7 @@ impl JSON
                         array_value = true;
                     }
 
-                    parse_complete = (OK & !array & (byte_prev != BACKSLASH));
+                    parse_complete = (OK & !array & (byte_prev != BACKSLASH) & has_value);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
