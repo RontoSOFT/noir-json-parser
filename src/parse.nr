@@ -72,11 +72,9 @@ impl JSON
         let mut string = false;
         let mut number = false;
         let mut literal = false;
-        let mut whitespace = false;
         let mut object = false;
         let mut array = false;
         let mut array_value = false;
-        let mut parse_complete = false;
         let mut minus = false;
         let mut digit_0 = false;
         let mut digit_1_9 = false;
@@ -86,6 +84,8 @@ impl JSON
         let mut e_minus = false;
         let mut e_plus = false;
         let mut e_digit = false;
+        let mut whitespace = false;
+        let mut parse_complete = false;
 
         for byte in bytes
         {
@@ -179,8 +179,8 @@ impl JSON
                         prop.value = prop.value.push_back(byte);
 
                         literal_field = 0;
-                        literal = false;
                         number = false;
+                        literal = false;
                         minus = false;
                         digit_0 = false;
                         digit_1_9 = false;
@@ -268,8 +268,8 @@ impl JSON
                     {
                         literal_field = 0;
                         expect_value = false;
-                        literal = false;
                         number = false;
+                        literal = false;
                         minus = false;
                         digit_0 = false;
                         digit_1_9 = false;
