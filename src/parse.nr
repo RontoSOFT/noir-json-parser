@@ -73,6 +73,7 @@ impl JSON
         let mut number = false;
         let mut literal = false;
         let mut whitespace = false;
+        let mut object = false;
         let mut array = false;
         let mut array_value = false;
         let mut parse_complete = false;
@@ -109,46 +110,42 @@ impl JSON
 
                     if (begin_array)
                     {
-                        OK |= ((objects != 0) & expect_value);
-
                         arrays += 1;
                         array = true;
-                        expect_value = true;
                     }
                     else
                     {
-                        OK = ((objects == 0) | array);
+                        OK = (!object | array);
 
                         objects += 1;
+                        object = true;
                         expect_value = array;
                         expect_key = true;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                 {
-                    let end_array = (byte == END_ARRAY);
-                    let has_value = (prop.value.len() != 0);
-
                     OK = (byte_prev != VALUE_DELIMITER);
 
-                    if (end_array)
+                    if (array) { prop.value = prop.value.push_back(byte); }
+
+                    let has_value = (prop.value.len() != 0);
+
+                    if (byte == END_ARRAY)
                     {
                         let has_key = (prop.key.len() != 0);
-                        OK &= (has_key | (objects == 0) | (!has_key & (objects != 0))); // == 1
+                        OK &= (has_key | !object | (!has_key & object)); // == 1
                         OK &= array;
 
                         arrays -= 1;
                         array = (arrays != 0);
-
-                        prop.value = prop.value.push_back(byte);
                     }
                     else
                     {
-                        OK &= ((objects != 0) | has_value);
+                        OK &= (object | has_value);
 
                         objects -= 1;
-
-                        if (array) { prop.value = prop.value.push_back(byte); }
+                        object = (objects != 0);
                     }
 
                     parse_complete = (OK & !array & (byte_prev != BACKSLASH) & has_value);
@@ -163,7 +160,7 @@ impl JSON
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = (((objects != 0) & array & expect_key) | !expect_value);
+                    OK = ((object & array & expect_key) | !expect_value);
 
                     expect_key = false;
                     expect_value = (byte_prev != BACKSLASH);
@@ -172,10 +169,10 @@ impl JSON
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
-                    OK = (((objects != 0) | array) & array_value & expect_value);
+                    OK = ((object | array) & array_value & expect_value);
 
                     array_value = false;
-                    expect_key = (objects != 0);
+                    expect_key = object;
 
                     if (array)
                     {
@@ -203,7 +200,7 @@ impl JSON
                     if ((byte - ZERO) < 10)
                     {
                         OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
-                        OK &= ((objects == 0) | (prop.key.len() != 0) | ((objects != 0) & array));
+                        OK &= (!object | (prop.key.len() != 0) | (object & array));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
