@@ -60,8 +60,6 @@ impl JSON
         let mut json = JSON { doc: [] };
         let mut prop = Property::none();
 
-        let mut key_delimiters : Field = 0;
-        let mut value_delimiters : Field = 0;
         let mut objects : Field = 0;
         let mut arrays : Field = 0;
         let mut literal_field : Field = 0;
@@ -69,6 +67,7 @@ impl JSON
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
+        let mut expect_key = false;
         let mut expect_value = true;
         let mut string = false;
         let mut number = false;
@@ -77,7 +76,6 @@ impl JSON
         let mut array = false;
         let mut array_value = false;
         let mut parse_complete = false;
-        let mut was_array = false;
         let mut minus = false;
         let mut digit_0 = false;
         let mut digit_1_9 = false;
@@ -115,15 +113,15 @@ impl JSON
 
                         arrays += 1;
                         array = true;
-                        value_delimiters = 0;
                         expect_value = true;
                     }
                     else
                     {
-                        OK = ((objects == 0) | was_array | array);
+                        OK = ((objects == 0) | array);
 
                         objects += 1;
                         expect_value = array;
+                        expect_key = true;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
@@ -131,28 +129,26 @@ impl JSON
                     let end_array = (byte == END_ARRAY);
                     let has_value = (prop.value.len() != 0);
 
+                    OK = (byte_prev != VALUE_DELIMITER);
+
                     if (end_array)
                     {
                         let has_key = (prop.key.len() != 0);
-                        OK  = (has_key | (objects == 0) | (!has_key & (objects != 0))); // == 1
-                        OK &= (array & ((value_delimiters == 0) | array_value));
+                        OK &= (has_key | (objects == 0) | (!has_key & (objects != 0))); // == 1
+                        OK &= array;
 
                         arrays -= 1;
                         array = (arrays != 0);
-                        was_array = true;
+
+                        prop.value = prop.value.push_back(byte);
                     }
                     else
                     {
-                        OK = ((objects != 0) & (was_array | has_value));
+                        OK &= ((objects != 0) | has_value);
 
                         objects -= 1;
-                        was_array = false;
-                    }
 
-                    if (array | end_array)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = true;
+                        if (array) { prop.value = prop.value.push_back(byte); }
                     }
 
                     parse_complete = (OK & !array & (byte_prev != BACKSLASH) & has_value);
@@ -163,34 +159,25 @@ impl JSON
 
                     string = true;
 
-                    if (expect_value)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = true;
-                    }
+                    if (expect_value) { prop.value = prop.value.push_back(byte); }
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = (((objects != 0) & array) | !expect_value);
+                    OK = (((objects != 0) & array & expect_key) | !expect_value);
 
-                    key_delimiters += (string as Field);
+                    expect_key = false;
                     expect_value = (byte_prev != BACKSLASH);
 
-                    if (array)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = true;
-                    }
+                    if (array) { prop.value = prop.value.push_back(byte); }
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
                     OK = (((objects != 0) | array) & array_value & expect_value);
 
-                    value_delimiters += 1;
                     array_value = false;
-                    parse_complete = (OK & !array & (byte_prev != BACKSLASH));
+                    expect_key = (objects != 0);
 
-                    if (!parse_complete)
+                    if (array)
                     {
                         prop.value = prop.value.push_back(byte);
 
@@ -208,8 +195,10 @@ impl JSON
                         e_digit = false;
                         whitespace = false;
                     }
+                    else { parse_complete = (OK & (byte_prev != BACKSLASH)); }
                 }
-                else if ((byte != TAB) & (byte != NEWLINE) & (byte != RETURN) & (byte != SPACE) & (byte != BACKSLASH))
+                else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
+                else
                 {
                     if ((byte - ZERO) < 10)
                     {
@@ -272,7 +261,6 @@ impl JSON
                     prop.value = prop.value.push_back(byte);
                     array_value = true;
                 }
-                else { whitespace = (number | literal); }
 
                 if (parse_complete)
                 {
