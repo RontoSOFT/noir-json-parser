@@ -21,12 +21,15 @@ use crate::globals::POINT;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
 
+global FIELD_t     : Field = 0x74;
 global FIELD_tr    : Field = 0x7472;
 global FIELD_tru   : Field = 0x747275;
 global FIELD_true  : Field = 0x74727565;
+global FIELD_n     : Field = 0x6E;
 global FIELD_nu    : Field = 0x6E75;
 global FIELD_nul   : Field = 0x6E756C;
 global FIELD_null  : Field = 0x6E756C6C;
+global FIELD_f     : Field = 0x66;
 global FIELD_fa    : Field = 0x6661;
 global FIELD_fal   : Field = 0x66616C;
 global FIELD_fals  : Field = 0x66616C73;
@@ -232,15 +235,15 @@ impl JSON
                         literal_field *= 256;
                         literal_field += (byte as Field);
 
-                        literal  = (literal_field == 0x74);
+                        literal  = (literal_field == FIELD_t);
                         literal |= (literal_field == FIELD_tr);
                         literal |= (literal_field == FIELD_tru);
                         literal |= (literal_field == FIELD_true);
-                        literal |= (literal_field == 0x6E);
+                        literal |= (literal_field == FIELD_n);
                         literal |= (literal_field == FIELD_nu);
                         literal |= (literal_field == FIELD_nul);
                         literal |= (literal_field == FIELD_null);
-                        literal |= (literal_field == 0x66);
+                        literal |= (literal_field == FIELD_f);
                         literal |= (literal_field == FIELD_fa);
                         literal |= (literal_field == FIELD_fal);
                         literal |= (literal_field == FIELD_fals);
