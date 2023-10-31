@@ -205,11 +205,11 @@ impl JSON
     pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
     {
         let key_bytes = key.as_bytes();
-        let len : u64 = (self.doc.len() as u64);
+        let len : u64 = (self.doc[0].len() as u64);
         let mut index : u64 = (0-1);
-        for i in 0..len { if (index == -1) { if (self.doc[i].key.eq_array(key_bytes)) { index = i; } } }
+        for i in 0..len { if (index == -1) { if (self.doc[0][i].key.eq_array(key_bytes)) { index = i; } } }
 
-        if (index != -1) { Option::some(self.doc[index].value) } else { Option::none() }
+        if (index != -1) { Option::some(self.doc[0][index].value) } else { Option::none() }
     }
 
     unconstrained
