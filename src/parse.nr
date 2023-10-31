@@ -115,8 +115,6 @@ impl JSON
                     }
                     else
                     {
-                        OK = (!object | array);
-
                         objects += 1;
                         object = true;
                         expect_value = array;
@@ -142,8 +140,6 @@ impl JSON
                     }
                     else
                     {
-                        OK &= (object | has_value);
-
                         objects -= 1;
                         object = (objects != 0);
                     }
