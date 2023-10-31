@@ -38,15 +38,15 @@ global FIELD_false : Field = 0x66616C7365;
 impl JSON
 {
     unconstrained
-    fn store_value(mut self, prop : Property) -> Self
+    fn store_value(mut self, prop : Property, index : u64) -> Self
     {
         // prop.print();
 
-        let len : u64 = (self.doc.len() as u64);
+        let len : u64 = (self.doc[index].len() as u64);
         let mut found = false;
-        for i in 0..len { if (!found) { if (prop.key.eq(self.doc[i].key)) { self.doc[i].value = prop.value; found = true; } } }
+        for i in 0..len { if (!found) { if (prop.key.eq(self.doc[index][i].key)) { self.doc[index][i].value = prop.value; found = true; } } }
 
-        if (!found) { self.doc = self.doc.push_back(prop); }
+        if (!found) { self.doc[index] = self.doc[index].push_back(prop); }
 
         self
     }
@@ -60,13 +60,14 @@ impl JSON
 
         let bytes = string.as_bytes();
 
-        let mut json = JSON { doc: [] };
+        let mut json = JSON { doc: [[]] };
         let mut prop = Property::none();
 
         let mut objects : Field = 0;
         let mut arrays : Field = 0;
         let mut literal_field : Field = 0;
 
+        let mut index : u64 = 0;
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
@@ -281,7 +282,7 @@ impl JSON
                         whitespace = false;
                         parse_complete = false;
 
-                        json = json.store_value(prop);
+                        json = json.store_value(prop, index);
                         prop = Property::none();
                     }
                 }
@@ -301,11 +302,11 @@ impl JSON
                 if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                 else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
-                if (OK) { json.doc = [prop]; }
+                if (OK) { json.doc[0] = [prop]; }
             }
 
             json
         }
-        else { JSON { doc: [] } }
+        else { JSON { doc: [[]] } }
     }
 }
