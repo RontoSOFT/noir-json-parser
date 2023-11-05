@@ -236,25 +236,11 @@ trait PropertyConversions
         result
     }
 
-    fn getInteger<N>(self, key : str<N>) -> Option<i54>
+    fn getField<N>(self, key : str<N>) -> Option<Field>
     {
-        let mut result : Option<i54> = Option::none();
-
         let option = self.bytesOf(key);
-        if (option.is_some())
-        {
-            let bytes : [u8] = option.unwrap_unchecked();
-            let value = bytes.asField();
-            if (value.is_some())
-            {
-                let value_field : Field = value.unwrap_unchecked();
-                let value_i54 : i54 = if (bytes[0] == MINUS) { -((-value_field) as i54) } else { value_field as i54 };
 
-                result = Option::some(value_i54);
-            }
-        }
-
-        result
+        if (option.is_some()) { option.unwrap_unchecked().asField() } else { Option::none() }
     }
 
     fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
