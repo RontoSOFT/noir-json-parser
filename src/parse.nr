@@ -38,46 +38,35 @@ global FIELD_false : Field = 0x66616C7365;
 impl JSON
 {
     unconstrained
-    fn store_value(mut self, prop : Property, index : u64) -> Self
-    {
-        // prop.print();
-
-        let len : u64 = (self.doc[index].len() as u64);
-        let mut found = false;
-        for i in 0..len { if (!found) { if (prop.key.eq(self.doc[index][i].key)) { self.doc[index][i].value = prop.value; found = true; } } }
-
-        if (!found) { self.doc[index] = self.doc[index].push_back(prop); }
-
-        self
-    }
-
-    unconstrained
     pub fn parse<SIZE>(string : str<SIZE>) -> JSON
     {
     //     dep::std::println("");
     //     dep::std::println(string);
     //     dep::std::println("");
+        JSON::parse_bytes(string.as_bytes(), 0, SIZE, -1)
+    }
 
-        let bytes = string.as_bytes();
-
-        let mut json = JSON { doc: [[]] };
+    unconstrained
+    fn parse_bytes<SIZE>(bytes : [u8; SIZE], begin : Field, end : Field, offset : Field) -> JSON
+    {
+        let mut json = JSON::none();
         let mut prop = Property::none();
 
-        let mut objects : Field = 0;
         let mut arrays : Field = 0;
         let mut literal_field : Field = 0;
+        let mut index : Field = begin;
 
-        let mut index : u64 = 0;
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
-        let mut expect_key = false;
         let mut expect_value = true;
+        let mut key_delimiter = false;
+        let mut value_delimiter = false;
+        let mut object = false;
+        let mut array = false;
         let mut string = false;
         let mut number = false;
         let mut literal = false;
-        let mut object = false;
-        let mut array = false;
         let mut array_value = false;
         let mut minus = false;
         let mut digit_0 = false;
@@ -91,64 +80,101 @@ impl JSON
         let mut whitespace = false;
         let mut parse_complete = false;
 
-        for byte in bytes
+        for _ in begin..end
         {
-            if (OK)
+            if (OK & (index != end))
             {
+                let byte = bytes[index];
+
                 if (string)
                 {
                     string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
 
-                    if      (expect_value)                 { prop.value = prop.value.push_back(byte); array_value = true; }
-                    else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte);}
-                }
-                else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
-                {
-                    let begin_array = (byte == BEGIN_ARRAY);
-
-                    if (array | begin_array)
+                    if (expect_value)
                     {
                         prop.value = prop.value.push_back(byte);
-                        array_value = array;
-                    }
-
-                    if (begin_array)
-                    {
-                        arrays += 1;
-                        array = true;
+                        array_value = true;
                     }
                     else
                     {
-                        objects += 1;
+                        if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
+                        OK &= (prop.key.len() != 0);
+                    }
+                }
+                else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
+                {
+                    if (byte == BEGIN_ARRAY)
+                    {
+                        prop.value = prop.value.push_back(byte);
+                        array_value = array;
+
+                        arrays += 1;
+                        array = true;
+                    }
+                    else if (object | array)
+                    {
+                        prop.value = prop.value.push_back(byte);
+                        array_value = true;
+
+                        let mut child_objects : Field = 1;
+                        let mut child_end_index : Field = 0;
+
+                        for i in (index + 1)..SIZE
+                        {
+                            if (child_objects != 0)
+                            {
+                                let byte = bytes[i];
+                                child_objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
+                            }
+                            else if (child_end_index == 0) { child_end_index = i; }
+                        }
+
+                        OK = (child_end_index != 0);
+                        if (OK)
+                        {
+                            let len : Field = (json.children.len() + offset + 1);
+                            let child_json = JSON::parse_bytes(bytes, index, child_end_index, len);
+
+                            OK = (child_json.doc.len() != 0);
+                            if (OK)
+                            {
+                                prop.value = prop.value.push_back(len as u8);
+                                prop.value = prop.value.push_back(END_OBJECT);
+
+                                json.children = json.children.push_back(child_json.doc);
+                                for child in child_json.children { json.children = json.children.push_back(child); }
+
+                                parse_complete = !array;
+                                index = (child_end_index - 1);
+                            }
+                        }
+                    }
+                    else
+                    {
                         object = true;
-                        expect_value = array;
-                        expect_key = true;
+                        expect_value = false;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                 {
-                    OK = (byte_prev != VALUE_DELIMITER);
-
-                    if (array) { prop.value = prop.value.push_back(byte); }
-
                     let has_value = (prop.value.len() != 0);
+
+                    OK = (!value_delimiter | (value_delimiter & array_value));
 
                     if (byte == END_ARRAY)
                     {
-                        let has_key = (prop.key.len() != 0);
-                        OK &= (has_key | !object | (!has_key & object)); // == 1
-                        OK &= array;
+                        prop.value = prop.value.push_back(byte);
 
                         arrays -= 1;
                         array = (arrays != 0);
                     }
                     else
                     {
-                        objects -= 1;
-                        object = (objects != 0);
+                        OK &= (object & ((prop.key.len() == 0) != has_value));
+                        object = false;
                     }
 
-                    parse_complete = (OK & !array & (byte_prev != BACKSLASH) & has_value);
+                    parse_complete = (OK & !array & has_value);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
@@ -160,19 +186,21 @@ impl JSON
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = ((object & array & expect_key) | !expect_value);
+                    OK = (object & !key_delimiter & (prop.key.len() != 0));
 
-                    expect_key = false;
+                    key_delimiter = true;
                     expect_value = (byte_prev != BACKSLASH);
 
                     if (array) { prop.value = prop.value.push_back(byte); }
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
-                    OK = ((object | array) & array_value & expect_value);
+                    OK = ((object | array) & array_value); // ((object & (prop.key.len() != 0) & !array) | array_value);
 
                     array_value = false;
-                    expect_key = object;
+                    key_delimiter = false;
+                    value_delimiter = true;
+                    parse_complete = (OK & !array & (prop.key.len() != 0));
 
                     if (array)
                     {
@@ -192,7 +220,6 @@ impl JSON
                         e_digit = false;
                         whitespace = false;
                     }
-                    else { parse_complete = (OK & (byte_prev != BACKSLASH)); }
                 }
                 else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
                 else
@@ -200,7 +227,7 @@ impl JSON
                     if ((byte - ZERO) < 10)
                     {
                         OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
-                        OK &= (!object | (prop.key.len() != 0) | (object & array));
+                        OK &= (!object | (prop.key.len() != 0));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
@@ -267,7 +294,6 @@ impl JSON
                     if (OK)
                     {
                         literal_field = 0;
-                        expect_value = false;
                         number = false;
                         literal = false;
                         minus = false;
@@ -281,32 +307,42 @@ impl JSON
                         e_digit = false;
                         whitespace = false;
                         parse_complete = false;
+                        expect_value = false;
 
-                        json = json.store_value(prop, index);
+                        let len : u64 = (json.doc.len() as u64);
+                        let mut found = false;
+                        for i in 0..len { if (!found) { if (prop.key.eq(json.doc[i].key)) { json.doc[i].value = prop.value; found = true; } } }
+
+                        if (!found) { json.doc = json.doc.push_back(prop); }
+
+                        // prop.print();
                         prop = Property::none();
                     }
                 }
 
                 byte_prev = byte;
-
-                // if (faulty) { let pos = i + 1; dep::std::println(f"Unexpected character at position {pos}"); }
+                index += 1;
             }
         }
 
-        OK &= ((objects == 0) & (arrays == 0));
+        OK &= !(object | array);
 
         if (OK)
         {
-            if (prop.value.len() != 0)
+            if (json.doc.len() == 0)
             {
                 if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                 else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
-                if (OK) { json.doc[0] = [prop]; }
+                if (OK) { json.doc = [prop]; }
             }
 
             json
         }
-        else { JSON { doc: [[]] } }
+        else
+        {
+            // dep::std::println(f"Unexpected character at position {index}");
+            JSON::none()
+        }
     }
 }
