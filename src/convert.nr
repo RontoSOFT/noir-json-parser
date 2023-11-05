@@ -1,6 +1,7 @@
 use dep::std::option::Option;
 
 use crate::JSON;
+use crate::Property;
 
 use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
@@ -43,7 +44,7 @@ fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
 unconstrained
 fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
 {
-    let mut result = Option::none();
+    let mut result : Option<[u64; 5]> = Option::none();
 
     let N : u64 = (bytes.len() as u64);
     let first : u8 = bytes[0];
@@ -106,14 +107,15 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
     result
 }
 
-trait Conversions
+trait ByteArrayConversions
 {
-    fn asBool(self) -> Option<bool>;
-    fn asField(self) -> Option<Field>;
-    fn asSlice(self) -> Option<[[u8]]>;
+    fn asBool(self : [u8]) -> Option<bool>;
+    fn asField(self : [u8]) -> Option<Field>;
+    fn asSlice(self : [u8]) -> Option<[[u8]]>;
+    fn asObject(self : [u8], json : JSON) -> Option<[Property]>;
 }
 
-impl Conversions for [u8]
+impl ByteArrayConversions for [u8]
 {
     unconstrained
     pub fn asBool(self) -> Option<bool>
@@ -134,7 +136,7 @@ impl Conversions for [u8]
     unconstrained
     pub fn asField(self: [u8]) -> Option<Field>
     {
-        let mut result = Option::none();
+        let mut result : Option<Field> = Option::none();
 
         let option = getOffsets(self);
 
@@ -196,24 +198,29 @@ impl Conversions for [u8]
 
         Option::some(result)
     }
+
+    unconstrained
+    pub fn asObject(self, json : JSON) -> Option<[Property]>
+    {
+        let mut result : Option<[Property]> = Option::none();
+
+        if (self.len() == 3)
+        {
+            let index : u8 = self[1];
+            let OK = (self[0] == BEGIN_OBJECT) & (self[2] == END_OBJECT) & (index < (json.doc.len() as u8));
+            if (OK) { result = Option::some(json.children[index]); }
+        }
+
+        result
+    }
 }
 
-impl JSON
+trait PropertyConversions
 {
-    // linear search of json keys to return an Option slice of the key's value bytes
-    unconstrained
-    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
-    {
-        let key_bytes = key.as_bytes();
-        let len : u64 = (self.doc[0].len() as u64);
-        let mut index : u64 = (0-1);
-        for i in 0..len { if (index == -1) { if (self.doc[0][i].key.eq_array(key_bytes)) { index = i; } } }
+    // linear search keys to return an Option slice containing associated value's bytes
+    fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>;
 
-        if (index != -1) { Option::some(self.doc[0][index].value) } else { Option::none() }
-    }
-
-    unconstrained
-    pub fn getBool<N>(self, key : str<N>) -> Option<bool>
+    fn getBool<N>(self, key : str<N>) -> Option<bool>
     {
         let mut result : Option<bool> = Option::none();
 
@@ -229,8 +236,7 @@ impl JSON
         result
     }
 
-    unconstrained
-    pub fn getInteger<N>(self, key : str<N>) -> Option<i54>
+    fn getInteger<N>(self, key : str<N>) -> Option<i54>
     {
         let mut result : Option<i54> = Option::none();
 
@@ -251,11 +257,31 @@ impl JSON
         result
     }
 
-    unconstrained
-    pub fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
+    fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
     {
         let option = self.bytesOf(key);
 
         if (option.is_some()) { option.unwrap_unchecked().asSlice() } else { Option::none() }
     }
+}
+
+impl PropertyConversions for [Property]
+{
+    unconstrained
+    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
+    {
+        let mut result : Option<[u8]> = Option::none();
+
+        let len = (self.len() as u64);
+        let key_bytes = key.as_bytes();
+        for i in 0..len { if (result.is_none()) { if (self[i].key.eq_array(key_bytes)) { result = Option::some(self[i].value); } } }
+
+        result
+    }
+}
+
+impl PropertyConversions for JSON
+{
+    unconstrained
+    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]> { self.doc.bytesOf(key) }
 }
