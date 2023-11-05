@@ -68,7 +68,7 @@ impl PropertyListExtensions for [Property]
     {
         let value = self.bytesOf(key);
 
-        if (value.is_none()) { Option::none() } else { value.unwrap_unchecked().asObject(parent) }
+        if (value.is_some()) { value.unwrap_unchecked().asObject(parent) } else { Option::none() }
     }
 }
 
@@ -91,7 +91,7 @@ impl JSON
     {
         let value = self.bytesOf(key);
 
-        if (value.is_none()) { Option::none() } else { value.unwrap_unchecked().asObject(self) }
+        if (value.is_some()) { value.unwrap_unchecked().asObject(self) } else { Option::none() }
     }
 
     unconstrained
