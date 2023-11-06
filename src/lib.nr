@@ -55,22 +55,22 @@ type Object = [Property];
 
 trait ObjectExtensions
 {
-    fn isNone(self : Object) -> bool;
+    fn is_none(self : Object) -> bool;
 
-    fn getChildObject<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
+    fn get_child_object<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
 }
 
 impl ObjectExtensions for Object
 {
     unconstrained
-    pub fn isNone(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
+    pub fn is_none(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
 
     unconstrained
-    pub fn getChildObject<N>(self, key : str<N>, parent : JSON) -> Option<Object>
+    pub fn get_child_object<N>(self, key : str<N>, parent : JSON) -> Option<Object>
     {
-        let value = self.bytesOf(key);
+        let value = self.get(key);
 
-        if (value.is_some()) { value.unwrap_unchecked().asObject(parent) } else { Option::none() }
+        if (value.is_some()) { value.unwrap_unchecked().as_object(parent) } else { Option::none() }
     }
 }
 
@@ -89,11 +89,11 @@ impl JSON
     pub fn child(self, index : u8) -> Object { self.children[index] }
 
     unconstrained
-    pub fn getObject<N>(self, key : str<N>) -> Option<Object>
+    pub fn get_object<N>(self, key : str<N>) -> Option<Object>
     {
-        let value = self.bytesOf(key);
+        let value = self.get(key);
 
-        if (value.is_some()) { value.unwrap_unchecked().asObject(self) } else { Option::none() }
+        if (value.is_some()) { value.unwrap_unchecked().as_object(self) } else { Option::none() }
     }
 
     unconstrained

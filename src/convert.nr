@@ -25,7 +25,7 @@ use crate::globals::CHAR_t;
 use crate::globals::CHAR_u;
 
 unconstrained
-fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
+fn get_whole(bytes: [u8], start : u64, end : u64) -> Field
 {
     let mut it : u64 = (end - 1); // walking in reverse
     let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
@@ -42,7 +42,7 @@ fn getWhole(bytes: [u8], start : u64, end : u64) -> Field
 }
 
 unconstrained
-fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
+fn get_offsets(bytes: [u8]) -> Option<[u64; 5]>
 {
     let mut result : Option<[u64; 5]> = Option::none();
 
@@ -109,16 +109,16 @@ fn getOffsets(bytes: [u8]) -> Option<[u64; 5]>
 
 trait ByteArrayConversions
 {
-    fn asBool(self : [u8]) -> Option<bool>;
-    fn asField(self : [u8]) -> Option<Field>;
-    fn asSlice(self : [u8]) -> Option<[[u8]]>;
-    fn asObject(self : [u8], json : JSON) -> Option<Object>;
+    fn as_bool(self : [u8]) -> Option<bool>;
+    fn as_field(self : [u8]) -> Option<Field>;
+    fn as_array(self : [u8]) -> Option<[[u8]]>;
+    fn as_object(self : [u8], json : JSON) -> Option<Object>;
 }
 
 impl ByteArrayConversions for [u8]
 {
     unconstrained
-    pub fn asBool(self) -> Option<bool>
+    pub fn as_bool(self) -> Option<bool>
     {
         let mut OK = false;
         let len : Field = self.len();
@@ -134,11 +134,11 @@ impl ByteArrayConversions for [u8]
     }
 
     unconstrained
-    pub fn asField(self: [u8]) -> Option<Field>
+    pub fn as_field(self: [u8]) -> Option<Field>
     {
         let mut result : Option<Field> = Option::none();
 
-        let option = getOffsets(self);
+        let option = get_offsets(self);
 
         if (option.is_some())
         {
@@ -147,7 +147,7 @@ impl ByteArrayConversions for [u8]
             // expect whole to have at least one digit, and decimal point to be missing
             if ((offsets[0] < offsets[1]) & (offsets[2] == offsets[3]))
             {
-                let mut whole : Field = getWhole(self, offsets[0], offsets[1]);
+                let mut whole : Field = get_whole(self, offsets[0], offsets[1]);
                 if (offsets[0] == 1) { whole = -whole; }
 
                 if (offsets[4] != 0)
@@ -155,7 +155,7 @@ impl ByteArrayConversions for [u8]
                     let mut power : Field = 0;
                     let mut exponent : Field = 1;
 
-                    power = getWhole(self, offsets[4], (self.len() as u64));
+                    power = get_whole(self, offsets[4], (self.len() as u64));
 
                     for _ in 0..power { exponent *= 10; }
 
@@ -170,7 +170,7 @@ impl ByteArrayConversions for [u8]
     }
 
     unconstrained
-    pub fn asSlice(self) -> Option<[[u8]]>
+    pub fn as_array(self) -> Option<[[u8]]>
     {
         let mut result : [[u8]] = [];
         let mut value : [u8] = [];
@@ -200,7 +200,7 @@ impl ByteArrayConversions for [u8]
     }
 
     unconstrained
-    pub fn asObject(self, parent : JSON) -> Option<Object>
+    pub fn as_object(self, parent : JSON) -> Option<Object>
     {
         let mut result : Option<Object> = Option::none();
 
@@ -218,13 +218,13 @@ impl ByteArrayConversions for [u8]
 trait PropertyConversions
 {
     // linear search keys to return an Option slice containing associated value's bytes
-    fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>;
+    fn get<N>(self, key : str<N>) -> Option<[u8]>;
 
-    fn getBool<N>(self, key : str<N>) -> Option<bool>
+    fn get_bool<N>(self, key : str<N>) -> Option<bool>
     {
         let mut result : Option<bool> = Option::none();
 
-        let option = self.bytesOf(key);
+        let option = self.get(key);
         if (option.is_some())
         {
             // a literal was parsed correctly if set as property value;
@@ -236,25 +236,25 @@ trait PropertyConversions
         result
     }
 
-    fn getField<N>(self, key : str<N>) -> Option<Field>
+    fn get_field<N>(self, key : str<N>) -> Option<Field>
     {
-        let option = self.bytesOf(key);
+        let option = self.get(key);
 
-        if (option.is_some()) { option.unwrap_unchecked().asField() } else { Option::none() }
+        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
     }
 
-    fn getSlice<N>(self, key : str<N>) -> Option<[[u8]]>
+    fn get_slice<N>(self, key : str<N>) -> Option<[[u8]]>
     {
-        let option = self.bytesOf(key);
+        let option = self.get(key);
 
-        if (option.is_some()) { option.unwrap_unchecked().asSlice() } else { Option::none() }
+        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
     }
 }
 
 impl PropertyConversions for Object
 {
     unconstrained
-    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
+    pub fn get<N>(self, key : str<N>) -> Option<[u8]>
     {
         let mut result : Option<[u8]> = Option::none();
 
@@ -269,5 +269,5 @@ impl PropertyConversions for Object
 impl PropertyConversions for JSON
 {
     unconstrained
-    pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]> { self.doc.bytesOf(key) }
+    pub fn get<N>(self, key : str<N>) -> Option<[u8]> { self.doc.get(key) }
 }

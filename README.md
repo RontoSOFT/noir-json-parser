@@ -89,14 +89,14 @@ The parsing process considers various JSON syntax rules, including checking for 
 
 #### Example
 
-You can use the `JSON` struct to parse JSON strings and extract values from keys via the `bytesOf` method:
+You can use the `JSON` struct to parse JSON strings and extract values from keys via the `get` method:
 
 ```rust
 unconstrained fn check_my_key()
 {
     let (key, value) = ("my_key", "100");
 
-    let bytes = JSON::parse("{'my_key' : 100}").bytesOf(key);
+    let bytes = JSON::parse("{'my_key' : 100}").get(key);
 
     assert(bytes.eq_string(value) == true);
     assert(bytes.eq_array(value.as_bytes()) == true);
@@ -110,7 +110,7 @@ unconstrained fn check_my_key_unconstrained()
 {
     let (key, value) = ("my_key", "100");
 
-    let field = JSON::parse("{'my_key' : 100}").getField(key);
+    let field = JSON::parse("{'my_key' : 100}").get_field(key);
 
     assert(field == 100);
 }
@@ -122,13 +122,13 @@ unconstrained fn check_my_key_unconstrained()
 
 The `convert.nr` module provides utility functions for converting numeric representations encoded in byte arrays to their respective numeric types. These functions are designed to handle different numeric formats and return `Option<T>` values for safe error handling.
 
-#### `asBool(bytes: [u8]) -> Option<bool>`
+#### `as_bool(bytes: [u8]) -> Option<bool>`
 
 This function attempts to parse a byte slice as a boolean value and returns an `Option<bool>`. It recognizes common boolean literals such as `null`, `true`, and `false`.
 
-#### `asField(bytes: [u8]) -> Option<Field>`
+#### `as_field(bytes: [u8]) -> Option<Field>`
 
-The `asField` function parses a byte slice as a numeric field and returns an `Option<Field>`. It can handle signed and unsigned numbers.
+The `as_field` function parses a byte slice as a numeric field and returns an `Option<Field>`. It can handle signed and unsigned numbers.
 
 #### `asInteger(bytes: [u8]) -> Option<i127>`
 
@@ -137,8 +137,8 @@ The `asInteger` function parses a byte slice as an integer value and returns an 
 #### Example
 
 ```rust
-let bytes = JSON::parse("{'my_key' : 100}").bytesOf("my_key");
-let result = convert::asField(bytes); //asBool, asInteger
+let bytes = JSON::parse("{'my_key' : 100}").get("my_key");
+let result = convert::as_field(bytes); //as_bool, asInteger
 
 assert(result.is_some());
 assert(result.unwrap_unchecked() == 30);
