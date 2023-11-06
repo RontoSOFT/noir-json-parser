@@ -118,13 +118,9 @@ impl JSON
                         let mut child_objects : Field = 1;
                         let mut child_end_index : Field = 0;
 
-                        for i in (index + 1)..SIZE
+                        for i in (index + 1)..end
                         {
-                            if (child_objects != 0)
-                            {
-                                let byte = bytes[i];
-                                child_objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
-                            }
+                            if      (child_objects != 0)   { child_objects += (((bytes[i] == BEGIN_OBJECT) as Field) - ((bytes[i] == END_OBJECT) as Field)); }
                             else if (child_end_index == 0) { child_end_index = i; }
                         }
 
