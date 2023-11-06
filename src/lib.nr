@@ -5,9 +5,6 @@ mod utils;
 
 use dep::std::option::Option;
 
-use crate::globals::BEGIN_OBJECT;
-use crate::globals::END_OBJECT;
-
 struct Property
 {
     key : [u8],

@@ -3,7 +3,6 @@ use dep::std::option::Option;
 use crate::JSON;
 use crate::Object;
 
-use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
@@ -13,16 +12,11 @@ use crate::globals::PLUS;
 use crate::globals::MINUS;
 use crate::globals::POINT;
 use crate::globals::ZERO;
-use crate::globals::CHAR_a;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
 use crate::globals::CHAR_f;
-use crate::globals::CHAR_l;
 use crate::globals::CHAR_n;
-use crate::globals::CHAR_r;
-use crate::globals::CHAR_s;
 use crate::globals::CHAR_t;
-use crate::globals::CHAR_u;
 
 unconstrained
 fn get_whole(bytes: [u8], start : u64, end : u64) -> Field

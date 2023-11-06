@@ -1,7 +1,6 @@
 use crate::JSON;
 use crate::Property;
 
-use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
