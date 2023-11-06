@@ -53,8 +53,8 @@ type Object = [Property];
 trait ObjectExtensions
 {
     fn is_none(self : Object) -> bool;
-
     fn get_child_object<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
+    fn print(self : Object);
 }
 
 impl ObjectExtensions for Object
@@ -69,6 +69,9 @@ impl ObjectExtensions for Object
 
         if (value.is_some()) { value.unwrap_unchecked().as_object(parent) } else { Option::none() }
     }
+
+    unconstrained
+    pub fn print(self) { for prop in self { prop.print(); } }
 }
 
 struct JSON
@@ -96,12 +99,12 @@ impl JSON
     unconstrained
     pub fn print(self)
     {
-        for prop in self.doc { prop.print(); }
+        self.doc.print();
 
         for i in 0..self.children.len()
         {
             dep::std::println(f"-- child #{i} --");
-            for prop in self.children[i] { prop.print(); }
+            self.children[i].print();
         }
     }
 }
