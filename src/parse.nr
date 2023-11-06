@@ -169,7 +169,7 @@ impl JSON
                     }
                     else
                     {
-                        OK &= (object & ((prop.key.len() == 0) != has_value));
+                        OK &= (object & ((prop.key.len() != 0) == has_value));
                         object = false;
                     }
 
@@ -221,6 +221,7 @@ impl JSON
                     }
                 }
                 else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
+                else if (byte == 0x00) { OK = !(object | array | (index == begin)); }
                 else
                 {
                     if ((byte - ZERO) < 10)
