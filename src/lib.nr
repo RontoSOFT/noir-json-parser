@@ -51,20 +51,22 @@ impl Property
     }
 }
 
-trait PropertyListExtensions
-{
-    fn is_empty_object(self : [Property]) -> bool;
+type Object = [Property];
 
-    fn getObject<N>(self : [Property], key : str<N>, parent : JSON) -> Option<[Property]>;
+trait ObjectExtensions
+{
+    fn is_empty_object(self : Object) -> bool;
+
+    fn getChildObject<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
 }
 
-impl PropertyListExtensions for [Property]
+impl ObjectExtensions for Object
 {
     unconstrained
     pub fn is_empty_object(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
 
     unconstrained
-    pub fn getObject<N>(self, key : str<N>, parent : JSON) -> Option<[Property]>
+    pub fn getChildObject<N>(self, key : str<N>, parent : JSON) -> Option<Object>
     {
         let value = self.bytesOf(key);
 
@@ -74,8 +76,8 @@ impl PropertyListExtensions for [Property]
 
 struct JSON
 {
-    doc : [Property]
-,   children : [[Property]]
+    doc : Object
+,   children : [Object]
 }
 
 impl JSON
@@ -84,10 +86,10 @@ impl JSON
     fn none() -> Self { Self { doc: [], children : [] } }
 
     unconstrained
-    pub fn child(self, index : u8) -> [Property] { self.children[index] }
+    pub fn child(self, index : u8) -> Object { self.children[index] }
 
     unconstrained
-    pub fn getObject<N>(self, key : str<N>) -> Option<[Property]>
+    pub fn getObject<N>(self, key : str<N>) -> Option<Object>
     {
         let value = self.bytesOf(key);
 

@@ -1,7 +1,7 @@
 use dep::std::option::Option;
 
 use crate::JSON;
-use crate::Property;
+use crate::Object;
 
 use crate::globals::BYTE_NULL;
 use crate::globals::BEGIN_ARRAY;
@@ -112,7 +112,7 @@ trait ByteArrayConversions
     fn asBool(self : [u8]) -> Option<bool>;
     fn asField(self : [u8]) -> Option<Field>;
     fn asSlice(self : [u8]) -> Option<[[u8]]>;
-    fn asObject(self : [u8], json : JSON) -> Option<[Property]>;
+    fn asObject(self : [u8], json : JSON) -> Option<Object>;
 }
 
 impl ByteArrayConversions for [u8]
@@ -200,15 +200,15 @@ impl ByteArrayConversions for [u8]
     }
 
     unconstrained
-    pub fn asObject(self, json : JSON) -> Option<[Property]>
+    pub fn asObject(self, parent : JSON) -> Option<Object>
     {
-        let mut result : Option<[Property]> = Option::none();
+        let mut result : Option<Object> = Option::none();
 
         if (self.len() == 3)
         {
             let index : u8 = self[1];
-            let OK = (self[0] == BEGIN_OBJECT) & (self[2] == END_OBJECT) & (index < (json.doc.len() as u8));
-            if (OK) { result = Option::some(json.children[index]); }
+            let OK = (self[0] == BEGIN_OBJECT) & (self[2] == END_OBJECT) & (index < (parent.children.len() as u8));
+            if (OK) { result = Option::some(parent.children[index]); }
         }
 
         result
@@ -251,7 +251,7 @@ trait PropertyConversions
     }
 }
 
-impl PropertyConversions for [Property]
+impl PropertyConversions for Object
 {
     unconstrained
     pub fn bytesOf<N>(self, key : str<N>) -> Option<[u8]>
