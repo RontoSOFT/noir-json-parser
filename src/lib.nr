@@ -55,7 +55,7 @@ type Object = [Property];
 
 trait ObjectExtensions
 {
-    fn is_empty_object(self : Object) -> bool;
+    fn isNone(self : Object) -> bool;
 
     fn getChildObject<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
 }
@@ -63,7 +63,7 @@ trait ObjectExtensions
 impl ObjectExtensions for Object
 {
     unconstrained
-    pub fn is_empty_object(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
+    pub fn isNone(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
 
     unconstrained
     pub fn getChildObject<N>(self, key : str<N>, parent : JSON) -> Option<Object>
