@@ -208,7 +208,7 @@ trait PropertyConversions
         if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
     }
 
-    fn get_slice<N>(self, key : str<N>) -> Option<[[u8]]>
+    fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
     {
         let option = self.get(key);
 
