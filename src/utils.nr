@@ -11,10 +11,10 @@ global chars =
 
 trait ByteSliceExtensions
 {
-    fn eq(self, right : [u8]) -> bool;
-    fn eq_array<N>(self, right : [u8; N]) -> bool;
-    fn eq_string<N>(self, right : str<N>) -> bool;
-    fn print(self);
+    fn eq(self : [u8], right : [u8]) -> bool;
+    fn eq_array<N>(self : [u8], right : [u8; N]) -> bool;
+    fn eq_string<N>(self : [u8], right : str<N>) -> bool;
+    fn print(self : [u8]);
     // fn to_array<N>(self) -> [u8; N];
 }
 
