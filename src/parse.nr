@@ -215,7 +215,7 @@ impl JSON
                 {
                     if ((byte - ZERO) < 10)
                     {
-                        OK  = (!digit_0 | (digit_0 & (fraction | e_E)));
+                        OK  = (!literal & (!digit_0 | (digit_0 & (fraction | e_E))));
                         OK &= (!object | (prop.key.len() != 0));
 
                         number = true;
@@ -236,7 +236,7 @@ impl JSON
                     }
                     else if (byte == MINUS)
                     {
-                        OK = (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_digit)));
+                        OK = (!(minus | digit_0 | digit_1_9) | (e_E & !(e_minus | e_plus | e_digit)));
 
                         number = true;
                         minus = true;
@@ -244,7 +244,7 @@ impl JSON
                     }
                     else if (byte == PLUS)
                     {
-                        OK = (e_E & !e_plus & !e_digit);
+                        OK = (e_E & !e_plus & !e_digit & !e_minus);
                         e_plus = true;
                     }
                     else
