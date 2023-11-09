@@ -46,7 +46,7 @@ impl JSON
     }
 
     unconstrained
-    fn parse_bytes<SIZE>(bytes : [u8; SIZE], begin : Field, end : Field, offset : Field) -> JSON
+    fn parse_bytes<SIZE>(bytes : [u8; SIZE], begin : Field, end : Field, offset : u8) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
@@ -58,7 +58,8 @@ impl JSON
         let mut byte_prev : u8 = 0;
 
         let mut OK = true;
-        let mut expect_value = true;
+        let mut value = true;
+        let mut done = false;
         let mut key_delimiter = false;
         let mut value_delimiter = false;
         let mut object = false;
@@ -77,7 +78,6 @@ impl JSON
         let mut e_plus = false;
         let mut e_digit = false;
         let mut whitespace = false;
-        let mut parse_complete = false;
 
         for _ in begin..end
         {
@@ -87,18 +87,11 @@ impl JSON
 
                 if (string)
                 {
-                    string = ((byte != QUOTATION_MARK) | (expect_value & (byte_prev == BACKSLASH)));
+                    string = ((byte != QUOTATION_MARK) | (value & (byte_prev == BACKSLASH)));
 
-                    if (expect_value)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = true;
-                    }
-                    else
-                    {
-                        if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
-                        OK &= (prop.key.len() != 0);
-                    }
+                    if      (value)                        { prop.value = prop.value.push_back(byte); array_value = true; }
+                    else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
+                    else                                   { OK &= (prop.key.len() != 0); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -127,7 +120,7 @@ impl JSON
                         OK = (child_end_index != 0);
                         if (OK)
                         {
-                            let len : Field = (json.children.len() + offset + 1);
+                            let len : u8 = ((json.children.len() as u8) + offset + 1);
                             let child_json = JSON::parse_bytes(bytes, index, child_end_index, len);
 
                             OK = (child_json.doc.len() != 0);
@@ -139,7 +132,7 @@ impl JSON
                                 json.children = json.children.push_back(child_json.doc);
                                 for child in child_json.children { json.children = json.children.push_back(child); }
 
-                                parse_complete = !array;
+                                done = !array;
                                 index = (child_end_index - 1);
                             }
                         }
@@ -147,7 +140,7 @@ impl JSON
                     else
                     {
                         object = true;
-                        expect_value = false;
+                        value = false;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
@@ -169,7 +162,7 @@ impl JSON
                         object = false;
                     }
 
-                    parse_complete = (OK & !array & has_value);
+                    done = (OK & !array & has_value);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
@@ -177,14 +170,14 @@ impl JSON
 
                     string = true;
 
-                    if (expect_value) { prop.value = prop.value.push_back(byte); }
+                    if (value) { prop.value = prop.value.push_back(byte); }
                 }
                 else if (byte == KEY_DELIMITER)
                 {
                     OK = (object & !key_delimiter & (prop.key.len() != 0));
 
                     key_delimiter = true;
-                    expect_value = (byte_prev != BACKSLASH);
+                    value = (byte_prev != BACKSLASH);
 
                     if (array) { prop.value = prop.value.push_back(byte); }
                 }
@@ -195,7 +188,7 @@ impl JSON
                     array_value = false;
                     key_delimiter = false;
                     value_delimiter = true;
-                    parse_complete = (OK & !array & (prop.key.len() != 0));
+                    done = (OK & !array & (prop.key.len() != 0));
 
                     if (array)
                     {
@@ -282,29 +275,13 @@ impl JSON
                     array_value = true;
                 }
 
-                if (parse_complete)
+                if (done)
                 {
                     if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                     else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
                     if (OK)
                     {
-                        literal_field = 0;
-                        number = false;
-                        literal = false;
-                        minus = false;
-                        digit_0 = false;
-                        digit_1_9 = false;
-                        fraction = false;
-                        fraction_digit = false;
-                        e_E = false;
-                        e_minus = false;
-                        e_plus = false;
-                        e_digit = false;
-                        whitespace = false;
-                        parse_complete = false;
-                        expect_value = false;
-
                         let mut copy : [Property] = [];
                         for current in json.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
                         json.doc = copy.push_back(prop);
@@ -312,6 +289,22 @@ impl JSON
                         // prop.print();
                         prop = Property::none();
                     }
+
+                    literal_field = 0;
+                    done = false;
+                    value = false;
+                    number = false;
+                    literal = false;
+                    minus = false;
+                    digit_0 = false;
+                    digit_1_9 = false;
+                    fraction = false;
+                    fraction_digit = false;
+                    e_E = false;
+                    e_minus = false;
+                    e_plus = false;
+                    e_digit = false;
+                    whitespace = false;
                 }
 
                 byte_prev = byte;
