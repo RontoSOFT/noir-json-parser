@@ -305,11 +305,9 @@ impl JSON
                         parse_complete = false;
                         expect_value = false;
 
-                        let len : u64 = (json.doc.len() as u64);
-                        let mut found = false;
-                        for i in 0..len { if (!found) { if (prop.key.eq(json.doc[i].key)) { json.doc[i].value = prop.value; found = true; } } }
-
-                        if (!found) { json.doc = json.doc.push_back(prop); }
+                        let mut copy : [Property] = [];
+                        for current in json.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
+                        json.doc = copy.push_back(prop);
 
                         // prop.print();
                         prop = Property::none();
