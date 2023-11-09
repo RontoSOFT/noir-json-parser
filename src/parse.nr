@@ -217,7 +217,7 @@ impl JSON
                     }
                 }
                 else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
-                else if (byte == 0x00) { OK = !(object | array | (index == begin)); }
+                else if (byte == 0x00) { OK = (!(object | array) & (index == (end - 1))); }
                 else
                 {
                     if ((byte - ZERO) < 10)
