@@ -1,5 +1,5 @@
 [package]
 name = "noir_json_parser"
 type = "lib"
-authors = [""]
+authors = ["grasshopper47","consentsam"]
 compiler_version = "0.19.2"
