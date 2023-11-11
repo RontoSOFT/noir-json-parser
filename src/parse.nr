@@ -84,6 +84,7 @@ impl JSON
             if (OK & (index != end))
             {
                 let byte = bytes[index];
+                index += 1;
 
                 if (string)
                 {
@@ -105,13 +106,12 @@ impl JSON
                     }
                     else if (object | array)
                     {
-                        prop.value = prop.value.push_back(byte);
                         array_value = true;
 
                         let mut child_objects : Field = 1;
                         let mut child_end_index : Field = 0;
 
-                        for i in (index + 1)..end
+                        for i in index..end
                         {
                             if      (child_objects != 0)   { child_objects += (((bytes[i] == BEGIN_OBJECT) as Field) - ((bytes[i] == END_OBJECT) as Field)); }
                             else if (child_end_index == 0) { child_end_index = i; }
@@ -120,20 +120,21 @@ impl JSON
                         OK = (child_end_index != 0);
                         if (OK)
                         {
-                            let len : u8 = ((json.children.len() as u8) + offset + 1);
-                            let child_json = JSON::parse_bytes(bytes, index, child_end_index, len);
+                            let child_index : u8 = ((json.children.len() as u8) + offset + 1);
+                            let child_json = JSON::parse_bytes(bytes, (index - 1), child_end_index, child_index);
 
                             OK = (child_json.doc.len() != 0);
                             if (OK)
                             {
-                                prop.value = prop.value.push_back(len as u8);
+                                prop.value = prop.value.push_back(BEGIN_OBJECT);
+                                prop.value = prop.value.push_back(child_index);
                                 prop.value = prop.value.push_back(END_OBJECT);
 
                                 json.children = json.children.push_back(child_json.doc);
                                 for child in child_json.children { json.children = json.children.push_back(child); }
 
                                 done = !array;
-                                index = (child_end_index - 1);
+                                index = child_end_index;
                             }
                         }
                     }
@@ -210,7 +211,7 @@ impl JSON
                     }
                 }
                 else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
-                else if (byte == 0x00) { OK = (!(object | array) & (index == (end - 1))); }
+                else if (byte == 0x00) { OK = (!(object | array) & (index == end)); }
                 else
                 {
                     if ((byte - ZERO) < 10)
@@ -308,7 +309,6 @@ impl JSON
                 }
 
                 byte_prev = byte;
-                index += 1;
             }
         }
 
