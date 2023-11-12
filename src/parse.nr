@@ -42,18 +42,18 @@ impl JSON
     //     dep::std::println("");
     //     dep::std::println(string);
     //     dep::std::println("");
-        JSON::parse_bytes(string.as_bytes(), 0, SIZE, -1)
+        JSON::parse_bytes(string.as_bytes(), &mut 0, SIZE, -1)
     }
 
     unconstrained
-    fn parse_bytes<SIZE>(bytes : [u8; SIZE], begin : Field, end : Field, offset : u8) -> JSON
+    fn parse_bytes<SIZE>(bytes : [u8; SIZE], mut begin : &mut Field, end : Field, offset : u8) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
 
         let mut arrays : Field = 0;
         let mut literal_field : Field = 0;
-        let mut index : Field = begin;
+        let mut index : Field = *begin;
 
         let mut byte_prev : u8 = 0;
 
@@ -79,7 +79,7 @@ impl JSON
         let mut e_digit = false;
         let mut whitespace = false;
 
-        for _ in begin..end
+        for _ in index..end
         {
             if (OK & (index != end))
             {
@@ -108,34 +108,23 @@ impl JSON
                     {
                         array_value = true;
 
-                        let mut child_objects : Field = 1;
-                        let mut child_end_index : Field = 0;
+                        let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
+                        let child_index : u8 = ((json.children.len() as u8) + offset + 1);
 
-                        for i in index..end
-                        {
-                            if      (child_objects != 0)   { child_objects += (((bytes[i] == BEGIN_OBJECT) as Field) - ((bytes[i] == END_OBJECT) as Field)); }
-                            else if (child_end_index == 0) { child_end_index = i; }
-                        }
+                        let child_json = JSON::parse_bytes(bytes, &mut index_local, (end - 1), child_index);
 
-                        OK = (child_end_index != 0);
+                        OK = (child_json.doc.len() != 0);
                         if (OK)
                         {
-                            let child_index : u8 = ((json.children.len() as u8) + offset + 1);
-                            let child_json = JSON::parse_bytes(bytes, (index - 1), child_end_index, child_index);
+                            prop.value = prop.value.push_back(BEGIN_OBJECT);
+                            prop.value = prop.value.push_back(child_index);
+                            prop.value = prop.value.push_back(END_OBJECT);
 
-                            OK = (child_json.doc.len() != 0);
-                            if (OK)
-                            {
-                                prop.value = prop.value.push_back(BEGIN_OBJECT);
-                                prop.value = prop.value.push_back(child_index);
-                                prop.value = prop.value.push_back(END_OBJECT);
+                            json.children = json.children.push_back(child_json.doc);
+                            for child in child_json.children { json.children = json.children.push_back(child); }
 
-                                json.children = json.children.push_back(child_json.doc);
-                                for child in child_json.children { json.children = json.children.push_back(child); }
-
-                                done = !array;
-                                index = child_end_index;
-                            }
+                            done = !array;
+                            index = index_local;
                         }
                     }
                     else
@@ -161,6 +150,12 @@ impl JSON
                     {
                         OK &= (object & ((prop.key.len() != 0) == has_value));
                         object = false;
+
+                        if (*begin != 0)
+                        {
+                            *begin = index; // return child object's end index
+                            index = end;
+                        }
                     }
 
                     done = (OK & !array & has_value);
@@ -312,9 +307,7 @@ impl JSON
             }
         }
 
-        OK &= !(object | array);
-
-        if (OK)
+        if (OK & !(object | array))
         {
             if (json.doc.len() == 0)
             {
