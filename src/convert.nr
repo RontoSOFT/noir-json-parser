@@ -100,8 +100,15 @@ impl ByteArrayConversions for [u8]
     unconstrained
     pub fn as_bool(self) -> Option<bool>
     {
-        if ((self[0] == CHAR_t) | (self[0] == CHAR_n) | (self[0] == CHAR_f)) { Option::some((self[0] == CHAR_t)) }
-        else { Option::none() }
+        let mut result : Option<bool> = Option::none();
+
+        if (self.len() != 0)
+        {
+            let OK = ((self[0] == CHAR_t) | (self[0] == CHAR_n) | (self[0] == CHAR_f));
+            if (OK) { result = Option::some(self[0] == CHAR_t); }
+        }
+
+        result
     }
 
     unconstrained
@@ -140,31 +147,32 @@ impl ByteArrayConversions for [u8]
     unconstrained
     pub fn as_array(self) -> Option<[[u8]]>
     {
-        let mut result : [[u8]] = [];
-        let mut value : [u8] = [];
+        let len : Field = (self.len() - 1);
 
-        let len : u64 = ((self.len() - 1) as u64);
-        let mut objects : u8 = 0;
-        let mut arrays : u8 = 0;
-
-        for i in 1..len // 1st byte is '[', last byte is ']'
+        if ((self[0] == BEGIN_ARRAY) & (self[len] == END_ARRAY))
         {
-            let byte = self[i];
-
-            arrays  += (((byte == BEGIN_ARRAY) as u8)  - ((byte == END_ARRAY) as u8));
-            objects += (((byte == BEGIN_OBJECT) as u8) - ((byte == END_OBJECT) as u8));
-
-            if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
+            let mut result : [[u8]] = [];
+            let mut value : [u8] = [];
+            let mut objects : Field = 0;
+            let mut arrays : Field = 0;
+            for i in 1..len
             {
-                result = result.push_back(value);
-                value = [];
+                let byte = self[i];
+
+                arrays  += (((byte == BEGIN_ARRAY) as Field)  - ((byte == END_ARRAY) as Field));
+                objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
+
+                if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
+                {
+                    result = result.push_back(value);
+                    value = [];
+                }
+                else { value = value.push_back(byte); }
             }
-            else { value = value.push_back(byte); }
+
+            Option::some(result.push_back(value))
         }
-
-        result = result.push_back(value);
-
-        Option::some(result)
+        else { Option::none() }
     }
 
     unconstrained
