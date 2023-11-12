@@ -86,6 +86,12 @@ impl JSON
     fn none() -> Self { Self { doc: [], children : [] } }
 
     unconstrained
+    pub fn is_none(self) -> bool { (self.doc.len() == 0) & (self.children.len() == 0) }
+
+    unconstrained
+    pub fn is_empty(self) -> bool { self.doc.len() == 0 }
+
+    unconstrained
     pub fn child(self, index : u8) -> Object { self.children[index] }
 
     unconstrained
