@@ -53,7 +53,7 @@ type Object = [Property];
 trait ObjectExtensions
 {
     fn is_none(self : Object) -> bool;
-    fn get_child_object<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
+    fn get_object<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
     fn print(self : Object);
 }
 
@@ -63,7 +63,7 @@ impl ObjectExtensions for Object
     pub fn is_none(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
 
     unconstrained
-    pub fn get_child_object<N>(self, key : str<N>, parent : JSON) -> Option<Object>
+    pub fn get_object<N>(self, key : str<N>, parent : JSON) -> Option<Object>
     {
         let value = self.get(key);
 
