@@ -132,7 +132,7 @@ impl ByteArrayConversions for [u8]
         {
             let offsets : [Field; 5] = option.unwrap_unchecked();
 
-            // expect whole to have at least one digit, and decimal point to be missing
+            // expect whole to have at least one digit and decimal point to be missing
             if ((offsets[0] != offsets[1]) & (offsets[2] == offsets[3]))
             {
                 let mut whole : Field = get_whole(self, offsets[0], offsets[1]);
@@ -209,8 +209,8 @@ impl PropertyConversions for Object
     {
         let mut result : Option<[u8]> = Option::none();
 
-        let size : Field = self.doc.len();
         let key_bytes : [u8; N] = key.as_bytes();
+        let size : Field = self.doc.len();
         for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
 
         result
@@ -256,8 +256,8 @@ impl PropertyConversions for JSON
     {
         let mut result : Option<[u8]> = Option::none();
 
-        let size : Field = self.doc.len();
         let key_bytes : [u8; N] = key.as_bytes();
+        let size : Field = self.doc.len();
         for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
 
         result
