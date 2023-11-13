@@ -23,9 +23,9 @@ impl ByteSliceExtensions for [u8]
     unconstrained
     pub fn eq(self, right : [u8]) -> bool
     {
-        let N = self.len();
-        let mut result = (N == right.len());
-        if (result) { for i in 0..N { result &= (self[i] == right[i]); } }
+        let size = self.len();
+        let mut result = (size == right.len());
+        if (result) { for i in 0..size { result &= (self[i] == right[i]); } }
         result
     }
 
@@ -52,9 +52,9 @@ impl ByteSliceExtensions for [u8]
     // pub fn to_array<N>(self) -> [u8; N]
     // {
     //     let mut bytes : [u8; N] = [0; N];
-    //     let mut len : u64 = (self.len() as u64);
-    //     if (N < len) { len = N; }
-    //     for i in 0..len { bytes[i] = self[i]; }
+    //     let mut size : Field = self.len();
+    //     if (N < size) { size = N; }
+    //     for i in 0..size { bytes[i] = self[i]; }
     //     bytes
     // }
 }

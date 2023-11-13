@@ -38,9 +38,9 @@ trait PropertyConversions
 }
 
 unconstrained
-fn get_whole(bytes : [u8], start : u64, end : u64) -> Field
+fn get_whole(bytes : [u8], start : Field, end : Field) -> Field
 {
-    let mut it : u64 = (end - 1); // walking in reverse
+    let mut it : Field = (end - 1); // walking in reverse
     let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
     let mut units : Field = 10;
 
@@ -55,24 +55,24 @@ fn get_whole(bytes : [u8], start : u64, end : u64) -> Field
 }
 
 unconstrained
-fn get_offsets(bytes : [u8]) -> Option<[u64; 5]>
+fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
 {
-    let mut result : Option<[u64; 5]> = Option::none();
+    let mut result : Option<[Field; 5]> = Option::none();
 
-    let N : u64 = (bytes.len() as u64); // at least 1
+    let size : Field = bytes.len(); // at least 1
     let first : u8 = bytes[0];
     let minus = (first == MINUS);
 
     // ensure at least one valid digit
     let mut valid =
-    if (N == 1) { !minus }
+    if (size == 1) { !minus }
     else        { (!((bytes[0] < 0x30) | (bytes[0] > 0x39)) | (minus & !(bytes[1] < 0x30) | (bytes[1] > 0x39))) };
 
     if (valid)
     {
-        let mut offsets : [u64; 5] = [(minus as u64), N, 0, 0, 0];
+        let mut offsets : [Field; 5] = [(minus as Field), size, 0, 0, 0];
         let mut decimal_point = false;
-        for i in offsets[0]..N
+        for i in offsets[0]..size
         {
             if (valid)
             {
@@ -130,10 +130,10 @@ impl ByteArrayConversions for [u8]
         let option = get_offsets(self);
         if (option.is_some())
         {
-            let offsets : [u64; 5] = option.unwrap_unchecked();
+            let offsets : [Field; 5] = option.unwrap_unchecked();
 
             // expect whole to have at least one digit, and decimal point to be missing
-            if ((offsets[0] < offsets[1]) & (offsets[2] == offsets[3]))
+            if ((offsets[0] != offsets[1]) & (offsets[2] == offsets[3]))
             {
                 let mut whole : Field = get_whole(self, offsets[0], offsets[1]);
                 if (offsets[0] == 1) { whole = -whole; }
@@ -142,7 +142,7 @@ impl ByteArrayConversions for [u8]
                     let mut power : Field = 0;
                     let mut exponent : Field = 1;
 
-                    power = get_whole(self, offsets[4], (self.len() as u64));
+                    power = get_whole(self, offsets[4], self.len());
                     for _ in 0..power { exponent *= 10; }
 
                     if (self[offsets[4] - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
@@ -158,15 +158,15 @@ impl ByteArrayConversions for [u8]
     unconstrained
     pub fn as_array(self) -> Option<[[u8]]>
     {
-        let len : Field = (self.len() - 1);
+        let size : Field = (self.len() - 1);
 
-        if ((self[0] == BEGIN_ARRAY) & (self[len] == END_ARRAY))
+        if ((self[0] == BEGIN_ARRAY) & (self[size] == END_ARRAY))
         {
             let mut result : [[u8]] = [];
             let mut value : [u8] = [];
             let mut objects : Field = 0;
             let mut arrays : Field = 0;
-            for i in 1..len
+            for i in 1..size
             {
                 let byte = self[i];
 
@@ -209,9 +209,9 @@ impl PropertyConversions for Object
     {
         let mut result : Option<[u8]> = Option::none();
 
-        let len = (self.doc.len() as u64);
-        let key_bytes = key.as_bytes();
-        for i in 0..len { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
+        let size : Field = self.doc.len();
+        let key_bytes : [u8; N] = key.as_bytes();
+        for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
 
         result
     }
@@ -256,9 +256,9 @@ impl PropertyConversions for JSON
     {
         let mut result : Option<[u8]> = Option::none();
 
-        let len = (self.doc.len() as u64);
-        let key_bytes = key.as_bytes();
-        for i in 0..len { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
+        let size : Field = self.doc.len();
+        let key_bytes : [u8; N] = key.as_bytes();
+        for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
 
         result
     }

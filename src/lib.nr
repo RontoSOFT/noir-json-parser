@@ -40,7 +40,7 @@ impl Property
         dep::std::println("value");
         dep::std::println("{");
 
-        let size : u64 = (self.value.len() as u64);
+        let size : Field = self.value.len();
         let mut object_index = false;
 
         for i in 0..size
