@@ -195,27 +195,9 @@ trait PropertyConversions
 {
     // linear search keys to return an Option slice containing associated value's bytes
     fn get<N>(self, key : str<N>) -> Option<[u8]>;
-
-    fn get_bool<N>(self, key : str<N>) -> Option<bool>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_bool() } else { Option::none() }
-    }
-
-    fn get_field<N>(self, key : str<N>) -> Option<Field>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
-    }
-
-    fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
-    }
+    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
+    fn get_field<N>(self, key : str<N>) -> Option<Field>;
+    fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>;
 }
 
 impl PropertyConversions for Object
@@ -231,10 +213,58 @@ impl PropertyConversions for Object
 
         result
     }
+
+    unconstrained
+    pub fn get_bool<N>(self, key : str<N>) -> Option<bool>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_bool() } else { Option::none() }
+    }
+
+    unconstrained
+    pub fn get_field<N>(self, key : str<N>) -> Option<Field>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
+    }
+
+    unconstrained
+    pub fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
+    }
 }
 
 impl PropertyConversions for JSON
 {
     unconstrained
     pub fn get<N>(self, key : str<N>) -> Option<[u8]> { self.doc.get(key) }
+
+    unconstrained
+    pub fn get_bool<N>(self, key : str<N>) -> Option<bool>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_bool() } else { Option::none() }
+    }
+
+    unconstrained
+    pub fn get_field<N>(self, key : str<N>) -> Option<Field>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
+    }
+
+    unconstrained
+    pub fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
+    {
+        let option = self.get(key);
+
+        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
+    }
 }
