@@ -66,7 +66,7 @@ fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
     // ensure at least one valid digit
     let mut valid =
     if (size == 1) { !minus }
-    else        { (!((bytes[0] < 0x30) | (bytes[0] > 0x39)) | (minus & !(bytes[1] < 0x30) | (bytes[1] > 0x39))) };
+    else           { (!((bytes[0] < 0x30) | (bytes[0] > 0x39)) | (minus & !(bytes[1] < 0x30) | (bytes[1] > 0x39))) };
 
     if (valid)
     {
