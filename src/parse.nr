@@ -309,7 +309,7 @@ impl JSON
 
         if (OK & !(object | array))
         {
-            if (json.is_empty())
+            if (json.is_none())
             {
                 if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                 else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
