@@ -88,11 +88,11 @@ impl JSON
 
                 if (string)
                 {
-                    string = ((byte != QUOTATION_MARK) | (value & (byte_prev == BACKSLASH)));
+                    string = ((byte != QUOTATION_MARK) | ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH)));
 
-                    if      (value)                        { prop.value = prop.value.push_back(byte); array_value = true; }
-                    else if (string & (byte != BACKSLASH)) { prop.key = prop.key.push_back(byte); }
-                    else                                   { OK &= (prop.key.len() != 0); }
+                    if      (value)  { prop.value = prop.value.push_back(byte); }
+                    else if (string) { prop.key = prop.key.push_back(byte); }
+                    else             { OK &= (prop.key.len() != 0); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -166,14 +166,14 @@ impl JSON
 
                     string = true;
 
-                    if (value) { prop.value = prop.value.push_back(byte); }
+                    if (value) { prop.value = prop.value.push_back(byte); array_value = true; }
                 }
                 else if (byte == KEY_DELIMITER)
                 {
                     OK = (object & !key_delimiter & (prop.key.len() != 0));
 
                     key_delimiter = true;
-                    value = (byte_prev != BACKSLASH);
+                    value = true;
 
                     if (array) { prop.value = prop.value.push_back(byte); }
                 }
@@ -205,14 +205,14 @@ impl JSON
                         whitespace = false;
                     }
                 }
-                else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE) | (byte == BACKSLASH)) { whitespace = (number | literal); }
+                else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE)) { whitespace = (number | literal); }
                 else if (byte == 0x00) { OK = (!(object | array) & (index == end)); }
                 else
                 {
                     if ((byte - ZERO) < 10)
                     {
                         OK  = (!literal & (!digit_0 | (digit_0 & (fraction | e_E))));
-                        OK &= (!object | (prop.key.len() != 0));
+                        OK &= !(object & (prop.key.len() == 0));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
@@ -222,7 +222,7 @@ impl JSON
                     }
                     else if (byte == POINT)
                     {
-                        OK = (number & !fraction);
+                        OK = (number & !fraction & !e_E);
                         fraction = true;
                     }
                     else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
@@ -240,7 +240,7 @@ impl JSON
                     }
                     else if (byte == PLUS)
                     {
-                        OK = (e_E & !e_plus & !e_digit & !e_minus);
+                        OK = (e_E & !(e_plus | e_digit | e_minus));
                         e_plus = true;
                     }
                     else
