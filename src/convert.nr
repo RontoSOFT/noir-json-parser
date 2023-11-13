@@ -137,12 +137,12 @@ impl ByteArrayConversions for [u8]
             {
                 let mut whole : Field = get_whole(self, offsets[0], offsets[1]);
                 if (offsets[0] == 1) { whole = -whole; }
-                if (offsets[4] != 0)
-                {
-                    let mut power : Field = 0;
-                    let mut exponent : Field = 1;
 
-                    power = get_whole(self, offsets[4], self.len());
+                if (offsets[4] != 0) // apply exponent
+                {
+                    let power : Field = get_whole(self, offsets[4], self.len());
+
+                    let mut exponent : Field = 1;
                     for _ in 0..power { exponent *= 10; }
 
                     if (self[offsets[4] - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
