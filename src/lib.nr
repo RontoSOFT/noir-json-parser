@@ -11,10 +11,25 @@ struct Property
     value : [u8],
 }
 
+struct Object
+{
+    parent : JSON
+,   doc : [Property]
+}
+
+struct JSON
+{
+    doc : [Property]
+,   children : [[Property]]
+}
+
 impl Property
 {
     unconstrained
     fn none() -> Self { Self { key: [], value: [] } }
+
+    unconstrained
+    pub fn is_none(self) -> bool { (self.key.len() == 0) & (self.value.len() == 0) }
 
     unconstrained
     pub fn print(self)
@@ -48,36 +63,19 @@ impl Property
     }
 }
 
-type Object = [Property];
-
-trait ObjectExtensions
-{
-    fn is_none(self : Object) -> bool;
-    fn get_object<N>(self : Object, key : str<N>, parent : JSON) -> Option<Object>;
-    fn print(self : Object);
-}
-
-impl ObjectExtensions for Object
+impl Object
 {
     unconstrained
-    pub fn is_none(self) -> bool { if (self.len() == 1) { ((self[0].key.len() == 0) & (self[0].value.len() == 0)) } else { false } }
+    pub fn is_none(self) -> bool { self.doc.len() == 0 }
 
     unconstrained
-    pub fn get_object<N>(self, key : str<N>, parent : JSON) -> Option<Object>
-    {
-        let value = self.get(key);
-
-        if (value.is_some()) { value.unwrap_unchecked().as_object(parent) } else { Option::none() }
-    }
+    pub fn is_empty(self) -> bool { if (self.doc.len() == 1) { self.doc[0].is_none() } else { false } }
 
     unconstrained
-    pub fn print(self) { for prop in self { prop.print(); } }
-}
+    pub fn len(self) -> Field { self.doc.len() }
 
-struct JSON
-{
-    doc : Object
-,   children : [Object]
+    unconstrained
+    pub fn print(self) { for prop in self.doc { prop.print(); } }
 }
 
 impl JSON
@@ -86,31 +84,26 @@ impl JSON
     fn none() -> Self { Self { doc: [], children : [] } }
 
     unconstrained
-    pub fn is_none(self) -> bool { (self.doc.len() == 0) & (self.children.len() == 0) }
+    pub fn is_none(self) -> bool { self.doc.len() == 0 }
 
     unconstrained
-    pub fn is_empty(self) -> bool { self.doc.len() == 0 }
+    pub fn is_empty(self) -> bool { if (self.doc.len() == 1) { self.doc[0].is_none() } else { false } }
 
     unconstrained
-    pub fn child(self, index : u8) -> Object { self.children[index] }
+    pub fn len(self) -> Field { self.doc.len() }
 
     unconstrained
-    pub fn get_object<N>(self, key : str<N>) -> Option<Object>
-    {
-        let value = self.get(key);
-
-        if (value.is_some()) { value.unwrap_unchecked().as_object(self) } else { Option::none() }
-    }
+    pub fn child(self, index : u8) -> Object { Object { parent: self, doc: self.children[index] } }
 
     unconstrained
     pub fn print(self)
     {
-        self.doc.print();
+        for prop in self.doc { prop.print(); }
 
         for i in 0..self.children.len()
         {
             dep::std::println(f"-- child #{i} --");
-            self.children[i].print();
+            for prop in self.children[i] { prop.print(); }
         }
     }
 }
