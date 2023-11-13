@@ -179,7 +179,7 @@ impl JSON
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
-                    OK = ((object | array) & array_value); // ((object & (prop.key.len() != 0) & !array) | array_value);
+                    OK = ((object | array) & array_value);
 
                     array_value = false;
                     key_delimiter = false;
