@@ -46,7 +46,7 @@ impl JSON
     }
 
     unconstrained
-    fn parse_bytes<SIZE>(bytes : [u8; SIZE], mut begin : &mut Field, end : Field, offset : u8) -> JSON
+    fn parse_bytes<SIZE>(bytes : [u8; SIZE], mut begin : &mut Field, end : Field, offset : Field) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
@@ -109,7 +109,7 @@ impl JSON
                         array_value = true;
 
                         let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
-                        let child_index : u8 = ((json.children.len() as u8) + offset + 1);
+                        let child_index : Field = (json.children.len() + offset + 1);
 
                         let child_json = JSON::parse_bytes(bytes, &mut index_local, (end - 1), child_index);
 
@@ -117,7 +117,7 @@ impl JSON
                         if (OK)
                         {
                             prop.value = prop.value.push_back(BEGIN_OBJECT);
-                            prop.value = prop.value.push_back(child_index);
+                            prop.value = prop.value.push_back(child_index as u8);
                             prop.value = prop.value.push_back(END_OBJECT);
 
                             json.children = json.children.push_back(child_json.doc);
