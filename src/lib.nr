@@ -52,7 +52,7 @@ impl Property
             }
             else
             {
-                let s = crate::utils::chars[self.value[i] - 32];
+                let s = crate::utils::chars[self.value[i]];
                 dep::std::println(f"    {s}");
             }
 
