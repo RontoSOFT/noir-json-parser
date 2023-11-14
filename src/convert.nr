@@ -109,7 +109,7 @@ fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
 impl ByteSliceConversions for [u8]
 {
     unconstrained
-    pub fn as_bool(self) -> Option<bool>
+    pub fn as_bool(self : [u8]) -> Option<bool>
     {
         let mut result : Option<bool> = Option::none();
 
@@ -123,7 +123,7 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_field(self) -> Option<Field>
+    pub fn as_field(self : [u8]) -> Option<Field>
     {
         let mut result : Option<Field> = Option::none();
 
@@ -156,7 +156,7 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_array(self) -> Option<[[u8]]>
+    pub fn as_array(self : [u8]) -> Option<[[u8]]>
     {
         let size : Field = (self.len() - 1);
 
@@ -187,7 +187,7 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_object(self, parent : JSON) -> Option<Object>
+    pub fn as_object(self : [u8], parent : JSON) -> Option<Object>
     {
         let mut result : Option<Object> = Option::none();
 
@@ -205,7 +205,7 @@ impl ByteSliceConversions for [u8]
 impl PropertyConversions for Object
 {
     unconstrained
-    pub fn get<N>(self, key : str<N>) -> Option<[u8]>
+    pub fn get<N>(self : Object, key : str<N>) -> Option<[u8]>
     {
         let mut result : Option<[u8]> = Option::none();
 
@@ -217,7 +217,7 @@ impl PropertyConversions for Object
     }
 
     unconstrained
-    pub fn get_bool<N>(self, key : str<N>) -> Option<bool>
+    pub fn get_bool<N>(self : Object, key : str<N>) -> Option<bool>
     {
         let option = self.get(key);
 
@@ -225,7 +225,7 @@ impl PropertyConversions for Object
     }
 
     unconstrained
-    pub fn get_field<N>(self, key : str<N>) -> Option<Field>
+    pub fn get_field<N>(self : Object, key : str<N>) -> Option<Field>
     {
         let option = self.get(key);
 
@@ -233,7 +233,7 @@ impl PropertyConversions for Object
     }
 
     unconstrained
-    pub fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
+    pub fn get_array<N>(self : Object, key : str<N>) -> Option<[[u8]]>
     {
         let option = self.get(key);
 
@@ -241,7 +241,7 @@ impl PropertyConversions for Object
     }
 
     unconstrained
-    pub fn get_object<N>(self, key : str<N>) -> Option<Object>
+    pub fn get_object<N>(self : Object, key : str<N>) -> Option<Object>
     {
         let value = self.get(key);
 
@@ -252,7 +252,7 @@ impl PropertyConversions for Object
 impl PropertyConversions for JSON
 {
     unconstrained
-    pub fn get<N>(self, key : str<N>) -> Option<[u8]>
+    pub fn get<N>(self : JSON, key : str<N>) -> Option<[u8]>
     {
         let mut result : Option<[u8]> = Option::none();
 
@@ -264,7 +264,7 @@ impl PropertyConversions for JSON
     }
 
     unconstrained
-    pub fn get_bool<N>(self, key : str<N>) -> Option<bool>
+    pub fn get_bool<N>(self : JSON, key : str<N>) -> Option<bool>
     {
         let option = self.get(key);
 
@@ -272,7 +272,7 @@ impl PropertyConversions for JSON
     }
 
     unconstrained
-    pub fn get_field<N>(self, key : str<N>) -> Option<Field>
+    pub fn get_field<N>(self : JSON, key : str<N>) -> Option<Field>
     {
         let option = self.get(key);
 
@@ -280,7 +280,7 @@ impl PropertyConversions for JSON
     }
 
     unconstrained
-    pub fn get_array<N>(self, key : str<N>) -> Option<[[u8]]>
+    pub fn get_array<N>(self : JSON, key : str<N>) -> Option<[[u8]]>
     {
         let option = self.get(key);
 
@@ -288,7 +288,7 @@ impl PropertyConversions for JSON
     }
 
     unconstrained
-    pub fn get_object<N>(self, key : str<N>) -> Option<Object>
+    pub fn get_object<N>(self : JSON, key : str<N>) -> Option<Object>
     {
         let value = self.get(key);
 
