@@ -18,7 +18,7 @@ use crate::globals::CHAR_f;
 use crate::globals::CHAR_n;
 use crate::globals::CHAR_t;
 
-trait ByteArrayConversions
+trait ByteSliceConversions
 {
     fn as_bool(self : [u8]) -> Option<bool>;
     fn as_field(self : [u8]) -> Option<Field>;
@@ -106,7 +106,7 @@ fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
     result
 }
 
-impl ByteArrayConversions for [u8]
+impl ByteSliceConversions for [u8]
 {
     unconstrained
     pub fn as_bool(self) -> Option<bool>
