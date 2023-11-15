@@ -98,16 +98,18 @@ impl JSON
                 {
                     if (byte == BEGIN_ARRAY)
                     {
+                        OK = (!array_value | (array_value & value_delimiter));
+
                         prop.value = prop.value.push_back(byte);
                         array_value = array;
 
                         arrays += 1;
                         array = true;
+
+                        OK &= value;
                     }
                     else if (object | array)
                     {
-                        array_value = true;
-
                         let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
                         let child_index : Field = (json.children.len() + offset + 1);
 
@@ -116,6 +118,8 @@ impl JSON
                         OK = (child_json.doc.len() != 0);
                         if (OK)
                         {
+                            if ((prop.value.len() as u64) > 2) { OK = value_delimiter; }
+
                             prop.value = prop.value.push_back(BEGIN_OBJECT);
                             prop.value = prop.value.push_back(child_index as u8);
                             prop.value = prop.value.push_back(END_OBJECT);
@@ -125,10 +129,14 @@ impl JSON
 
                             done = !array;
                             index = index_local;
+
+                            array_value = true;
                         }
                     }
                     else
                     {
+                        OK &= value;
+
                         object = true;
                         value = false;
                     }
@@ -166,7 +174,13 @@ impl JSON
 
                     string = true;
 
-                    if (value) { prop.value = prop.value.push_back(byte); array_value = true; }
+                    if (value)
+                    {
+                        if (array_value) { OK = value_delimiter; }
+
+                        prop.value = prop.value.push_back(byte);
+                        array_value = true;
+                    }
                 }
                 else if (byte == KEY_DELIMITER)
                 {
