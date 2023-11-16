@@ -154,6 +154,7 @@ impl JSON
                     else
                     {
                         OK &= (object & ((prop.key.len() != 0) == has_value));
+
                         object = false;
 
                         if (*begin != 0)
@@ -173,7 +174,7 @@ impl JSON
 
                     if (value)
                     {
-                        if (array_value) { OK = value_delimiter; }
+                        OK = (!array_value | (array_value & value_delimiter));
 
                         prop.value = prop.value.push_back(byte);
                         array_value = true;
@@ -181,7 +182,7 @@ impl JSON
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = (object & !key_delimiter & (prop.key.len() != 0));
+                    OK = (object & !(key_delimiter | (prop.key.len() == 0)));
 
                     key_delimiter = true;
                     value = true;
@@ -195,7 +196,7 @@ impl JSON
                     array_value = false;
                     key_delimiter = false;
                     value_delimiter = true;
-                    done = (OK & !array & (prop.key.len() != 0));
+                    done = (OK & !array);
 
                     if (array)
                     {
