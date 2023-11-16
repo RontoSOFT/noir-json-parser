@@ -77,7 +77,6 @@ impl JSON
         let mut e_minus = false;
         let mut e_plus = false;
         let mut e_digit = false;
-        let mut whitespace = false;
 
         for _ in index..end
         {
@@ -127,9 +126,7 @@ impl JSON
                             json.children = json.children.push_back(child_json.doc);
                             for child in child_json.children { json.children = json.children.push_back(child); }
 
-                            done = !array;
                             index = index_local;
-
                             array_value = true;
                         }
                     }
@@ -216,10 +213,9 @@ impl JSON
                         e_minus = false;
                         e_plus = false;
                         e_digit = false;
-                        whitespace = false;
                     }
                 }
-                else if ((byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == SPACE)) { whitespace = (number | literal); }
+                else if ((byte == SPACE) | (byte == TAB) | (byte == NEWLINE) | (byte == RETURN)) { done = (number | literal); }
                 else if (byte == 0x00) { OK = (!(object | array) & (index == end)); }
                 else
                 {
@@ -279,7 +275,7 @@ impl JSON
                         OK = (!number & literal);
                     }
 
-                    OK &= !whitespace;
+                    OK &= value;
 
                     prop.value = prop.value.push_back(byte);
                     array_value = true;
@@ -314,7 +310,6 @@ impl JSON
                     e_minus = false;
                     e_plus = false;
                     e_digit = false;
-                    whitespace = false;
                 }
 
                 byte_prev = byte;
