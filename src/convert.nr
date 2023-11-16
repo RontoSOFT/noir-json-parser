@@ -55,24 +55,26 @@ fn get_whole(bytes : [u8], start : Field, end : Field) -> Field
 }
 
 unconstrained
-fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
+fn get_offsets(bytes : [u8]) -> [Field; 5]
 {
-    let mut result : Option<[Field; 5]> = Option::none();
+    let mut result : [Field; 5] = [0; 5];
 
+    let start : Field = ((bytes[0] == MINUS) as Field);
     let size : Field = bytes.len(); // at least 1
-    let first : u8 = bytes[0];
-    let minus = (first == MINUS);
 
-    // ensure at least one valid digit
+    // ensure at least one digit
     let mut valid =
-    if (size == 1) { !minus }
-    else           { (!((bytes[0] < 0x30) | (bytes[0] > 0x39)) | (minus & !(bytes[1] < 0x30) | (bytes[1] > 0x39))) };
+    if      (size != 1) { (bytes[start] - ZERO) < 10 }
+    else if (size != 0) { (bytes[0] - ZERO) < 10 }
+    else                { false };
 
     if (valid)
     {
-        let mut offsets : [Field; 5] = [(minus as Field), size, 0, 0, 0];
+        result[0] = start;
+        result[1] = size;
+
         let mut decimal_point = false;
-        for i in offsets[0]..size
+        for i in result[0]..size
         {
             if (valid)
             {
@@ -80,27 +82,27 @@ fn get_offsets(bytes : [u8]) -> Option<[Field; 5]>
 
                 if (byte == POINT)
                 {
-                    offsets[1] = i;       // end of whole bytes
-                    offsets[2] = (i + 1); // start of fraction bytes
+                    result[1] = i;       // end of whole bytes
+                    result[2] = (i + 1); // start of fraction bytes
 
                     decimal_point = true;
                 }
                 else if ((byte == CHAR_e) | (byte == CHAR_E))
                 {
-                    if (decimal_point) { offsets[3] = i; } // end of fraction bytes
-                    else               { offsets[1] = i; } // end of whole bytes
+                    if (decimal_point) { result[3] = i; } // end of fraction bytes
+                    else               { result[1] = i; } // end of whole bytes
 
-                    offsets[4] = (i + 1); // start of exponent bytes
+                    result[4] = (i + 1); // start of exponent bytes
                 }
                 else if ((byte == MINUS) | (byte == PLUS))
                 {
-                    offsets[4] = (i + 1); // start of exponent bytes
+                    result[4] = (i + 1); // start of exponent bytes
                 }
                 else { valid = ((byte - ZERO) < 10); }
             }
         }
 
-        if (valid) { result = Option::some(offsets); }
+        if (!valid) { result = [0; 5]; }
     }
 
     result
@@ -127,29 +129,29 @@ impl ByteSliceConversions for [u8]
     {
         let mut result : Option<Field> = Option::none();
 
-        let option = get_offsets(self);
-        if (option.is_some())
+        let offsets = get_offsets(self);
+
+        let first : Field = offsets[0];
+        let second : Field = offsets[1];
+        let last : Field = offsets[4];
+
+        // expect whole to have at least one digit and decimal point to be missing
+        if ((first != second) & (offsets[2] == offsets[3]))
         {
-            let offsets : [Field; 5] = option.unwrap_unchecked();
+            let mut whole : Field = get_whole(self, first, second);
+            if (first == 1) { whole = -whole; }
 
-            // expect whole to have at least one digit and decimal point to be missing
-            if ((offsets[0] != offsets[1]) & (offsets[2] == offsets[3]))
+            if (last != 0) // apply exponent
             {
-                let mut whole : Field = get_whole(self, offsets[0], offsets[1]);
-                if (offsets[0] == 1) { whole = -whole; }
+                let power : Field = get_whole(self, last, self.len());
 
-                if (offsets[4] != 0) // apply exponent
-                {
-                    let power : Field = get_whole(self, offsets[4], self.len());
+                let mut exponent : Field = 1;
+                for _ in 0..power { exponent *= 10; }
 
-                    let mut exponent : Field = 1;
-                    for _ in 0..power { exponent *= 10; }
-
-                    if (self[offsets[4] - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
-                }
-
-                result = Option::some(whole);
+                if (self[last - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
             }
+
+            result = Option::some(whole);
         }
 
         result
