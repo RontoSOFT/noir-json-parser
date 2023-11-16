@@ -29,7 +29,7 @@ trait ByteSliceConversions
 trait PropertyConversions
 {
     // linear search keys to return an Option slice containing associated value's bytes
-    fn get<N>(self, key : str<N>) -> Option<[u8]>;
+    fn get<N>(self, key : str<N>) -> [u8];
 
     fn get_bool<N>(self, key : str<N>) -> Option<bool>;
     fn get_field<N>(self, key : str<N>) -> Option<Field>;
@@ -59,50 +59,50 @@ fn get_offsets(bytes : [u8]) -> [Field; 5]
 {
     let mut result : [Field; 5] = [0; 5];
 
-    let start : Field = ((bytes[0] == MINUS) as Field);
-    let size : Field = bytes.len(); // at least 1
-
-    // ensure at least one digit
-    let mut valid =
-    if      (size != 1) { (bytes[start] - ZERO) < 10 }
-    else if (size != 0) { (bytes[0] - ZERO) < 10 }
-    else                { false };
-
-    if (valid)
+    let size : Field = bytes.len();
+    if (size != 0)
     {
-        result[0] = start;
-        result[1] = size;
+        let start : Field = ((bytes[0] == MINUS) as Field);
 
-        let mut decimal_point = false;
-        for i in result[0]..size
+        // ensure at least one digit
+        let mut valid = if (size != 1) { (bytes[start] - ZERO) < 10 } else { (bytes[0] - ZERO) < 10 };
+
+        if (valid)
         {
-            if (valid)
+            result[0] = start;
+            result[1] = size;
+
+            let mut decimal_point = false;
+            for i in result[0]..size
             {
-                let byte = bytes[i];
-
-                if (byte == POINT)
+                if (valid)
                 {
-                    result[1] = i;       // end of whole bytes
-                    result[2] = (i + 1); // start of fraction bytes
+                    let byte = bytes[i];
 
-                    decimal_point = true;
-                }
-                else if ((byte == CHAR_e) | (byte == CHAR_E))
-                {
-                    if (decimal_point) { result[3] = i; } // end of fraction bytes
-                    else               { result[1] = i; } // end of whole bytes
+                    if (byte == POINT)
+                    {
+                        result[1] = i;       // end of whole bytes
+                        result[2] = (i + 1); // start of fraction bytes
 
-                    result[4] = (i + 1); // start of exponent bytes
+                        decimal_point = true;
+                    }
+                    else if ((byte == CHAR_e) | (byte == CHAR_E))
+                    {
+                        if (decimal_point) { result[3] = i; } // end of fraction bytes
+                        else               { result[1] = i; } // end of whole bytes
+
+                        result[4] = (i + 1); // start of exponent bytes
+                    }
+                    else if ((byte == MINUS) | (byte == PLUS))
+                    {
+                        result[4] = (i + 1); // start of exponent bytes
+                    }
+                    else { valid = ((byte - ZERO) < 10); }
                 }
-                else if ((byte == MINUS) | (byte == PLUS))
-                {
-                    result[4] = (i + 1); // start of exponent bytes
-                }
-                else { valid = ((byte - ZERO) < 10); }
             }
-        }
 
-        if (!valid) { result = [0; 5]; }
+            if (!valid) { result = [0; 5]; }
+        }
     }
 
     result
@@ -207,93 +207,53 @@ impl ByteSliceConversions for [u8]
 impl PropertyConversions for Object
 {
     unconstrained
-    pub fn get<N>(self : Object, key : str<N>) -> Option<[u8]>
+    pub fn get<N>(self : Object, key : str<N>) -> [u8]
     {
-        let mut result : Option<[u8]> = Option::none();
+        let mut result : [u8] = [];
 
         let key_bytes : [u8; N] = key.as_bytes();
         let size : Field = self.doc.len();
-        for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
+        for i in 0..size { if (result.len() == 0) { if (self.doc[i].key.eq_array(key_bytes)) { result = self.doc[i].value; } } }
 
         result
     }
 
     unconstrained
-    pub fn get_bool<N>(self : Object, key : str<N>) -> Option<bool>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_bool() } else { Option::none() }
-    }
+    pub fn get_bool<N>(self : Object, key : str<N>) -> Option<bool> { self.get(key).as_bool() }
 
     unconstrained
-    pub fn get_field<N>(self : Object, key : str<N>) -> Option<Field>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
-    }
+    pub fn get_field<N>(self : Object, key : str<N>) -> Option<Field> { self.get(key).as_field() }
 
     unconstrained
-    pub fn get_array<N>(self : Object, key : str<N>) -> Option<[[u8]]>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
-    }
+    pub fn get_array<N>(self : Object, key : str<N>) -> Option<[[u8]]> { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : Object, key : str<N>) -> Option<Object>
-    {
-        let value = self.get(key);
-
-        if (value.is_some()) { value.unwrap_unchecked().as_object(self.parent) } else { Option::none() }
-    }
+    pub fn get_object<N>(self : Object, key : str<N>) -> Option<Object> { self.get(key).as_object(self.parent) }
 }
 
 impl PropertyConversions for JSON
 {
     unconstrained
-    pub fn get<N>(self : JSON, key : str<N>) -> Option<[u8]>
+    pub fn get<N>(self : JSON, key : str<N>) -> [u8]
     {
-        let mut result : Option<[u8]> = Option::none();
+        let mut result : [u8] = [];
 
         let key_bytes : [u8; N] = key.as_bytes();
         let size : Field = self.doc.len();
-        for i in 0..size { if (result.is_none()) { if (self.doc[i].key.eq_array(key_bytes)) { result = Option::some(self.doc[i].value); } } }
+        for i in 0..size { if (result.len() == 0) { if (self.doc[i].key.eq_array(key_bytes)) { result = self.doc[i].value; } } }
 
         result
     }
 
     unconstrained
-    pub fn get_bool<N>(self : JSON, key : str<N>) -> Option<bool>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_bool() } else { Option::none() }
-    }
+    pub fn get_bool<N>(self : JSON, key : str<N>) -> Option<bool> { self.get(key).as_bool() }
 
     unconstrained
-    pub fn get_field<N>(self : JSON, key : str<N>) -> Option<Field>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_field() } else { Option::none() }
-    }
+    pub fn get_field<N>(self : JSON, key : str<N>) -> Option<Field> { self.get(key).as_field() }
 
     unconstrained
-    pub fn get_array<N>(self : JSON, key : str<N>) -> Option<[[u8]]>
-    {
-        let option = self.get(key);
-
-        if (option.is_some()) { option.unwrap_unchecked().as_array() } else { Option::none() }
-    }
+    pub fn get_array<N>(self : JSON, key : str<N>) -> Option<[[u8]]> { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : JSON, key : str<N>) -> Option<Object>
-    {
-        let value = self.get(key);
-
-        if (value.is_some()) { value.unwrap_unchecked().as_object(self) } else { Option::none() }
-    }
+    pub fn get_object<N>(self : JSON, key : str<N>) -> Option<Object> { self.get(key).as_object(self) }
 }
