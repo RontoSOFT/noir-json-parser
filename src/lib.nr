@@ -1,5 +1,3 @@
-use dep::std::option::Option;
-
 mod globals;
 mod parse;
 mod convert;
@@ -45,7 +43,7 @@ impl Property
 
         for i in 0..size
         {
-            let byte : u8 = self.value[i];
+            let byte = self.value[i];
 
             if (object & (byte != crate::globals::END_OBJECT) & (byte != crate::globals::BACKSLASH))
             {
@@ -55,9 +53,9 @@ impl Property
             {
                 let c = crate::utils::chars[byte];
                 dep::std::println(f"    {c}");
-            }
 
-            object = (byte == crate::globals::BEGIN_OBJECT);
+                object = (byte == crate::globals::BEGIN_OBJECT);
+            }
         }
 
         dep::std::println("}");

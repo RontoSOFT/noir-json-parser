@@ -62,11 +62,11 @@ impl ByteSliceConversions for [u8]
     unconstrained
     fn get_offsets(bytes : [u8]) -> [Field; 5]
     {
+        let mut result : [Field; 5] = [0; 5];
+
         let size : Field = bytes.len();
-        if (size == 0) { [0; 5] }
-        else
+        if (size != 0)
         {
-            let mut result : [Field; 5] = [0; 5];
             let start : Field = ((bytes[0] == MINUS) as Field);
 
             // ensure at least one digit
@@ -78,7 +78,7 @@ impl ByteSliceConversions for [u8]
                 result[1] = size;
 
                 let mut decimal_point = false;
-                for i in result[0]..size
+                for i in start..size
                 {
                     if (valid)
                     {
@@ -108,9 +108,9 @@ impl ByteSliceConversions for [u8]
 
                 if (!valid) { result = [0; 5]; }
             }
-
-            result
         }
+
+        result
     }
 
     unconstrained
