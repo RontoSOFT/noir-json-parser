@@ -117,6 +117,7 @@ impl ByteSliceConversions for [u8]
     pub fn as_bool(mut bytes : [u8]) -> Option<bool>
     {
         bytes = bytes.parse_string();
+
         if (bytes.len() == 0) { Option::none() }
         else
         {
@@ -127,16 +128,17 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_field(self : [u8]) -> Option<Field>
+    pub fn as_field(mut bytes : [u8]) -> Option<Field>
     {
-        let mut result : Option<Field> = Option::none();
+        bytes = bytes.parse_string();
 
-        let bytes : [u8] = self.parse_string();
         let mut offsets : [Field; 5] = bytes.get_offsets();
 
         let first : Field = offsets[0];
         let second : Field = offsets[1];
         let last : Field = offsets[4];
+
+        let mut result : Option<Field> = Option::none();
 
         // expect whole to have at least one digit and decimal point to be missing
         if ((first != second) & (offsets[2] == offsets[3]))
@@ -161,9 +163,9 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_array(self : [u8]) -> [[u8]]
+    pub fn as_array(mut bytes : [u8]) -> [[u8]]
     {
-        let bytes : [u8] = self.parse_string();
+        bytes = bytes.parse_string();
 
         let mut size : Field = bytes.len();
         if (size == 0) | (size == 1) { [] }
@@ -198,11 +200,10 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_object(self : [u8], parent : JSON) -> Object
+    pub fn as_object(bytes : [u8], parent : JSON) -> Object
     {
         let mut result : Object = Object::none();
 
-        let mut bytes : [u8] = self;
         if (bytes.len() != 0)
         {
             if (bytes[0] == crate::globals::QUOTATION_MARK)
@@ -215,7 +216,7 @@ impl ByteSliceConversions for [u8]
                 let size = bytes.len();
                 let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
 
-                if      (OK & (size == 2) & (self.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
+                if      (OK & (size == 2) & (bytes.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
                 else if (OK & (size == 3))
                 {
                     let index : u8 = bytes[1];
