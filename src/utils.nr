@@ -53,7 +53,7 @@ impl ByteSliceExtensions for [u8]
     // pub fn to_array<N>(self : [u8]) -> [u8; N]
     // {
     //     let mut bytes : [u8; N] = [0; N];
-    //     let mut size : Field = self.len();
+    //     let mut size : u64 = (self.len() as u64);
     //     if (N < size) { size = N; }
     //     for i in 0..size { bytes[i] = self[i]; }
     //     bytes

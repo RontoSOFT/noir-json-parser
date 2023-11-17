@@ -38,13 +38,13 @@ trait PropertyConversions
 }
 
 unconstrained
-fn get_whole(bytes : [u8], start : Field, end : Field) -> Field
+fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field
 {
     let mut it : Field = (end - 1); // walking in reverse
     let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
     let mut units : Field = 10;
 
-    for _ in start..it
+    for _ in begin..it
     {
         it -= 1;
         whole += (((bytes[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
