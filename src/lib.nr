@@ -1,9 +1,9 @@
+use dep::std::option::Option;
+
 mod globals;
 mod parse;
 mod convert;
 mod utils;
-
-use dep::std::option::Option;
 
 struct Property
 {

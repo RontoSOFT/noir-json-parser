@@ -1,8 +1,5 @@
 use dep::std::option::Option;
 
-use crate::JSON;
-use crate::Object;
-
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
@@ -18,15 +15,18 @@ use crate::globals::CHAR_f;
 use crate::globals::CHAR_n;
 use crate::globals::CHAR_t;
 
+use crate::JSON;
+use crate::Object;
+
 trait ByteSliceConversions
 {
     fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field;
     fn get_offsets(bytes : [u8]) -> [Field; 5];
 
-    fn as_bool(self : [u8]) -> Option<bool>;
-    fn as_field(self : [u8]) -> Option<Field>;
-    fn as_array(self : [u8]) -> [[u8]];
-    fn as_object(self : [u8], parent : JSON) -> Object;
+    fn as_bool(bytes : [u8]) -> Option<bool>;
+    fn as_field(bytes : [u8]) -> Option<Field>;
+    fn as_array(bytes : [u8]) -> [[u8]];
+    fn as_object(bytes : [u8], parent : JSON) -> Object;
 }
 
 trait PropertyConversions
@@ -114,9 +114,9 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_bool(self : [u8]) -> Option<bool>
+    pub fn as_bool(mut bytes : [u8]) -> Option<bool>
     {
-        let bytes : [u8] = self.parse_string();
+        bytes = bytes.parse_string();
         if (bytes.len() == 0) { Option::none() }
         else
         {
@@ -268,10 +268,5 @@ impl PropertyConversions for JSON
     pub fn get_array<N>(self : JSON, key : str<N>) -> [[u8]] { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : JSON, key : str<N>) -> Object
-    {
-        let k = self.get(key);
-        // dep::std::println("KKK");
-        // k.print();
-        k.as_object(self) }
+    pub fn get_object<N>(self : JSON, key : str<N>) -> Object { self.get(key).as_object(self) }
 }
