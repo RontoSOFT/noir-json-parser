@@ -93,6 +93,7 @@ impl<N> BytesParser for [u8; N]
         let mut OK = (index != end);
         let mut value = true;
         let mut done = false;
+        let mut escaped = false;
         let mut key_delimiter = false;
         let mut value_delimiter = false;
         let mut object = false;
@@ -120,11 +121,13 @@ impl<N> BytesParser for [u8; N]
 
                 if (string)
                 {
-                    string = ((byte != QUOTATION_MARK) | ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH)));
+                    string  = (byte != QUOTATION_MARK);
+                    string |= ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH) & !escaped);
 
-                    if      (value)  { prop.value = prop.value.push_back(byte); }
-                    else if (string) { prop.key = prop.key.push_back(byte); }
-                    else             { OK &= (prop.key.len() != 0); }
+                    let safe = !((byte == BACKSLASH) & escaped);
+                    if      (safe & value)  { prop.value = prop.value.push_back(byte); }
+                    else if (safe & string) { prop.key = prop.key.push_back(byte); }
+                    else if (safe)          { OK &= (prop.key.len() != 0); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -197,13 +200,14 @@ impl<N> BytesParser for [u8; N]
                         }
                     }
 
-                    done = (OK & !array & has_value);
+                    done = (OK & !array & has_value) | (bytes[end - 1] == QUOTATION_MARK);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
-                    OK = (array | !(number | literal));
+                    OK = ((array | !(number | literal)) & !escaped);
 
                     string = true;
+                    escaped = (byte_prev == BACKSLASH);
 
                     if (value)
                     {
@@ -249,8 +253,14 @@ impl<N> BytesParser for [u8; N]
                         e_digit = false;
                     }
                 }
-                else if ((byte == SPACE) | (byte == TAB) | (byte == NEWLINE) | (byte == RETURN)) { done = (number | literal); }
-                else if (byte == 0x00) { OK = (!(object | array) & (index == end)); }
+                else if ((byte == SPACE) | (byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == BACKSLASH))
+                {
+                    done = ((number | literal) & (byte != BACKSLASH));
+                }
+                else if (byte == 0x00)
+                {
+                    OK = (!(object | array) & (index == end));
+                }
                 else
                 {
                     if ((byte - ZERO) < 10)

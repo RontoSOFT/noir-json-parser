@@ -202,16 +202,45 @@ impl ByteSliceConversions for [u8]
     {
         let mut result : Object = Object::none();
 
-        let bytes : [u8] = self.parse_string();
-        let size : Field = bytes.len();
-
-        if      ((size == 0) & (self.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
-        else if (size == 3)
+        let mut bytes : [u8] = self;
+        if (bytes.len() != 0)
         {
-            let index : u8 = bytes[1];
-            let OK = (bytes[0] == BEGIN_OBJECT) & (bytes[2] == END_OBJECT) & (index < (parent.children.len() as u8));
-            if (OK) { result = Object { parent, doc: parent.children[index] }; }
+            if (bytes[0] == crate::globals::QUOTATION_MARK)
+            {
+                let json = bytes.parse(&mut 1, (bytes.len() - 1), -1);
+                if (!json.is_none()) { result = Object { parent: json, doc: json.doc }; }
+            }
+            else
+            {
+                let size = bytes.len();
+                let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
+
+                if      (OK & (size == 2) & (self.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
+                else if (OK & (size == 3))
+                {
+                    let index : u8 = bytes[1];
+                    if (index < (parent.children.len() as u8)) { result = Object { parent, doc: parent.children[index] }; }
+                }
+            }
         }
+
+
+        // let bytes : [u8] = self.parse_string();
+        // let size : Field = bytes.len();
+        // // self.print();
+        // // bytes.print();
+
+        // if      ((size == 0) & (self.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
+        // else if (size == 3)
+        // {
+        //     let index : u8 = bytes[1];
+        //     let OK = (bytes[0] == BEGIN_OBJECT) & (bytes[2] == END_OBJECT) & (index < (parent.children.len() as u8));
+        //     if (OK) { result = Object { parent, doc: parent.children[index] }; }
+        // }
+        // // else
+        // // {
+
+        // // }
 
         result
     }

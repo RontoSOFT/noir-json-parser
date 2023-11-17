@@ -41,22 +41,23 @@ impl Property
         dep::std::println("{");
 
         let size : Field = self.value.len();
-        let mut object_index = false;
+        let mut object = false;
 
         for i in 0..size
         {
-            if (object_index)
+            let byte : u8 = self.value[i];
+
+            if (object & (byte != crate::globals::END_OBJECT) & (byte != crate::globals::BACKSLASH))
             {
-                let index = self.value[i];
-                dep::std::println(f"        {index}");
+                dep::std::println(f"        {byte}");
             }
             else
             {
-                let s = crate::utils::chars[self.value[i]];
-                dep::std::println(f"    {s}");
+                let c = crate::utils::chars[byte];
+                dep::std::println(f"    {c}");
             }
 
-            object_index = (self.value[i] == crate::globals::BEGIN_OBJECT);
+            object = (byte == crate::globals::BEGIN_OBJECT);
         }
 
         dep::std::println("}");
