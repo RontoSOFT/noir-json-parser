@@ -20,6 +20,9 @@ use crate::globals::CHAR_t;
 
 trait ByteSliceConversions
 {
+    fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field;
+    fn get_offsets(bytes : [u8]) -> [Field; 5];
+
     fn as_bool(self : [u8]) -> Option<bool>;
     fn as_field(self : [u8]) -> Option<Field>;
     fn as_array(self : [u8]) -> [[u8]];
@@ -37,79 +40,79 @@ trait PropertyConversions
     fn get_object<N>(self, key : str<N>) -> Object;
 }
 
-unconstrained
-fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field
-{
-    let mut it : Field = (end - 1); // walking in reverse
-    let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
-    let mut units : Field = 10;
-
-    for _ in begin..it
-    {
-        it -= 1;
-        whole += (((bytes[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
-        units *= 10;
-    }
-
-    whole
-}
-
-unconstrained
-fn get_offsets(bytes : [u8]) -> [Field; 5]
-{
-    let size : Field = bytes.len();
-    if (size == 0) { [0; 5] }
-    else
-    {
-        let mut result : [Field; 5] = [0; 5];
-        let start : Field = ((bytes[0] == MINUS) as Field);
-
-        // ensure at least one digit
-        let mut valid = if (size != 1) { (bytes[start] - ZERO) < 10 } else { (bytes[0] - ZERO) < 10 };
-
-        if (valid)
-        {
-            result[0] = start;
-            result[1] = size;
-
-            let mut decimal_point = false;
-            for i in result[0]..size
-            {
-                if (valid)
-                {
-                    let byte = bytes[i];
-
-                    if (byte == POINT)
-                    {
-                        result[1] = i;       // end of whole bytes
-                        result[2] = (i + 1); // start of fraction bytes
-
-                        decimal_point = true;
-                    }
-                    else if ((byte == CHAR_e) | (byte == CHAR_E))
-                    {
-                        if (decimal_point) { result[3] = i; } // end of fraction bytes
-                        else               { result[1] = i; } // end of whole bytes
-
-                        result[4] = (i + 1); // start of exponent bytes
-                    }
-                    else if ((byte == MINUS) | (byte == PLUS))
-                    {
-                        result[4] = (i + 1); // start of exponent bytes
-                    }
-                    else { valid = ((byte - ZERO) < 10); }
-                }
-            }
-
-            if (!valid) { result = [0; 5]; }
-        }
-
-        result
-    }
-}
-
 impl ByteSliceConversions for [u8]
 {
+    unconstrained
+    fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field
+    {
+        let mut it : Field = (end - 1); // walking in reverse
+        let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
+        let mut units : Field = 10;
+
+        for _ in begin..it
+        {
+            it -= 1;
+            whole += (((bytes[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
+            units *= 10;
+        }
+
+        whole
+    }
+
+    unconstrained
+    fn get_offsets(bytes : [u8]) -> [Field; 5]
+    {
+        let size : Field = bytes.len();
+        if (size == 0) { [0; 5] }
+        else
+        {
+            let mut result : [Field; 5] = [0; 5];
+            let start : Field = ((bytes[0] == MINUS) as Field);
+
+            // ensure at least one digit
+            let mut valid = if (size != 1) { (bytes[start] - ZERO) < 10 } else { (bytes[0] - ZERO) < 10 };
+
+            if (valid)
+            {
+                result[0] = start;
+                result[1] = size;
+
+                let mut decimal_point = false;
+                for i in result[0]..size
+                {
+                    if (valid)
+                    {
+                        let byte = bytes[i];
+
+                        if (byte == POINT)
+                        {
+                            result[1] = i;       // end of whole bytes
+                            result[2] = (i + 1); // start of fraction bytes
+
+                            decimal_point = true;
+                        }
+                        else if ((byte == CHAR_e) | (byte == CHAR_E))
+                        {
+                            if (decimal_point) { result[3] = i; } // end of fraction bytes
+                            else               { result[1] = i; } // end of whole bytes
+
+                            result[4] = (i + 1); // start of exponent bytes
+                        }
+                        else if ((byte == MINUS) | (byte == PLUS))
+                        {
+                            result[4] = (i + 1); // start of exponent bytes
+                        }
+                        else { valid = ((byte - ZERO) < 10); }
+                    }
+                }
+
+                if (!valid) { result = [0; 5]; }
+            }
+
+            result
+        }
+    }
+
     unconstrained
     pub fn as_bool(self : [u8]) -> Option<bool>
     {
@@ -129,7 +132,7 @@ impl ByteSliceConversions for [u8]
         let mut result : Option<Field> = Option::none();
 
         let bytes : [u8] = self.parse_string();
-        let mut offsets : [Field; 5] = get_offsets(bytes);
+        let mut offsets : [Field; 5] = bytes.get_offsets();
 
         let first : Field = offsets[0];
         let second : Field = offsets[1];
@@ -138,12 +141,12 @@ impl ByteSliceConversions for [u8]
         // expect whole to have at least one digit and decimal point to be missing
         if ((first != second) & (offsets[2] == offsets[3]))
         {
-            let mut whole : Field = get_whole(bytes, first, second);
+            let mut whole : Field = bytes.get_whole(first, second);
             if (first == 1) { whole = -whole; }
 
             if (last != 0) // apply exponent
             {
-                let power : Field = get_whole(bytes, last, bytes.len());
+                let power : Field = bytes.get_whole(last, bytes.len());
 
                 let mut exponent : Field = 1;
                 for _ in 0..power { exponent *= 10; }
