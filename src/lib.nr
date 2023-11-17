@@ -66,6 +66,9 @@ impl Property
 impl Object
 {
     unconstrained
+    fn none() -> Self { Self { parent: dep::std::unsafe::zeroed(), doc : [] } }
+
+    unconstrained
     pub fn is_none(self) -> bool { self.doc.len() == 0 }
 
     unconstrained

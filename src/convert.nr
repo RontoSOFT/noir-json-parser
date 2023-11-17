@@ -23,7 +23,7 @@ trait ByteSliceConversions
     fn as_bool(self : [u8]) -> Option<bool>;
     fn as_field(self : [u8]) -> Option<Field>;
     fn as_array(self : [u8]) -> [[u8]];
-    fn as_object(self : [u8], parent : JSON) -> Option<Object>;
+    fn as_object(self : [u8], parent : JSON) -> Object;
 }
 
 trait PropertyConversions
@@ -34,7 +34,7 @@ trait PropertyConversions
     fn get_bool<N>(self, key : str<N>) -> Option<bool>;
     fn get_field<N>(self, key : str<N>) -> Option<Field>;
     fn get_array<N>(self, key : str<N>) -> [[u8]];
-    fn get_object<N>(self, key : str<N>) -> Option<Object>;
+    fn get_object<N>(self, key : str<N>) -> Object;
 }
 
 unconstrained
@@ -190,15 +190,15 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_object(self : [u8], parent : JSON) -> Option<Object>
+    pub fn as_object(self : [u8], parent : JSON) -> Object
     {
-        let mut result : Option<Object> = Option::none();
+        let mut result : Object = Object::none();
 
         if (self.len() == 3)
         {
             let index : u8 = self[1];
             let OK = (self[0] == BEGIN_OBJECT) & (self[2] == END_OBJECT) & (index < (parent.children.len() as u8));
-            if (OK) { result = Option::some(Object { parent, doc: parent.children[index] }); }
+            if (OK) { result = Object { parent, doc: parent.children[index] }; }
         }
 
         result
@@ -229,7 +229,7 @@ impl PropertyConversions for Object
     pub fn get_array<N>(self : Object, key : str<N>) -> [[u8]] { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : Object, key : str<N>) -> Option<Object> { self.get(key).as_object(self.parent) }
+    pub fn get_object<N>(self : Object, key : str<N>) -> Object { self.get(key).as_object(self.parent) }
 }
 
 impl PropertyConversions for JSON
@@ -256,5 +256,5 @@ impl PropertyConversions for JSON
     pub fn get_array<N>(self : JSON, key : str<N>) -> [[u8]] { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : JSON, key : str<N>) -> Option<Object> { self.get(key).as_object(self) }
+    pub fn get_object<N>(self : JSON, key : str<N>) -> Object { self.get(key).as_object(self) }
 }
