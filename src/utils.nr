@@ -10,52 +10,43 @@ global chars =
     "{","|","}","~"
 ];
 
-trait ByteSliceExtensions
+trait ByteArrayEqualityExtension
 {
-    fn eq(self : [u8], right : [u8]) -> bool;
-    fn eq_array<N>(self : [u8], right : [u8; N]) -> bool;
-    fn eq_string<N>(self : [u8], right : str<N>) -> bool;
-    fn print(self : [u8]);
-    // fn to_array<N>(self) -> [u8; N];
+    fn eq<N>(bytes : Self, right : [u8; N]) -> bool;
+    fn eq_string(bytes : [u8], right : str) -> bool;
+    fn into_array(bytes : [u8]) -> Self;
+    fn print(bytes : Self);
 }
 
-impl ByteSliceExtensions for [u8]
+impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
 {
     unconstrained
-    pub fn eq(self : [u8], right : [u8]) -> bool
+    pub fn eq<N>(bytes : Self, right : [u8; N]) -> bool
     {
-        let size = self.len();
+        let size = bytes.len();
         let mut result = (size == right.len());
-        if (result) { for i in 0..size { result &= (self[i] == right[i]); } }
+        if (result) { for i in 0..size { result &= (bytes[i] == right[i]); } }
         result
     }
 
     unconstrained
-    pub fn eq_array<N>(self : [u8], right : [u8; N]) -> bool
+    pub fn eq_string(bytes : [u8], right : str<SIZE>) -> bool { bytes.eq(right.as_bytes()) }
+
+    unconstrained
+    pub fn into_array(bytes : [u8]) -> Self
     {
-        let mut result = (self.len() == N);
-        if (result) { for i in 0..N { result &= (self[i] == right[i]); } }
-        result
+        let mut array : Self = [0; SIZE];
+        let mut size : u64 = (bytes.len() as u64);
+        if (SIZE < size) { size = SIZE; }
+        for i in 0..size { array[i] = bytes[i]; }
+        array
     }
 
     unconstrained
-    pub fn eq_string<N>(self : [u8], right : str<N>) -> bool { self.eq_array(right.as_bytes()) }
-
-    unconstrained
-    pub fn print(self : [u8])
+    pub fn print(bytes : Self)
     {
         dep::std::println("{");
-        for byte in self { let s = chars[byte]; dep::std::println(f"    {s}"); }
+        for byte in bytes { let c = chars[byte]; dep::std::println(f"    {c}"); }
         dep::std::println("}");
     }
-
-    // unconstrained
-    // pub fn to_array<N>(self : [u8]) -> [u8; N]
-    // {
-    //     let mut bytes : [u8; N] = [0; N];
-    //     let mut size : u64 = (self.len() as u64);
-    //     if (N < size) { size = N; }
-    //     for i in 0..size { bytes[i] = self[i]; }
-    //     bytes
-    // }
 }
