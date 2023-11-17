@@ -57,11 +57,11 @@ fn get_whole(bytes : [u8], begin : Field, end : Field) -> Field
 unconstrained
 fn get_offsets(bytes : [u8]) -> [Field; 5]
 {
-    let mut result : [Field; 5] = [0; 5];
-
     let size : Field = bytes.len();
-    if (size != 0)
+    if (size == 0) { [0; 5] }
+    else
     {
+        let mut result : [Field; 5] = [0; 5];
         let start : Field = ((bytes[0] == MINUS) as Field);
 
         // ensure at least one digit
@@ -103,9 +103,9 @@ fn get_offsets(bytes : [u8]) -> [Field; 5]
 
             if (!valid) { result = [0; 5]; }
         }
-    }
 
-    result
+        result
+    }
 }
 
 impl ByteSliceConversions for [u8]
@@ -113,15 +113,14 @@ impl ByteSliceConversions for [u8]
     unconstrained
     pub fn as_bool(self : [u8]) -> Option<bool>
     {
-        let mut result : Option<bool> = Option::none();
-
-        if (self.len() != 0)
+        let bytes : [u8] = self.parse_string();
+        if (bytes.len() == 0) { Option::none() }
+        else
         {
-            let OK = ((self[0] == CHAR_t) | (self[0] == CHAR_n) | (self[0] == CHAR_f));
-            if (OK) { result = Option::some(self[0] == CHAR_t); }
+            let byte = bytes[0];
+            let OK = ((byte == CHAR_t) | (byte == CHAR_n) | (byte == CHAR_f));
+            if (OK) { Option::some(byte == CHAR_t) } else { Option::none() }
         }
-
-        result
     }
 
     unconstrained
@@ -129,7 +128,8 @@ impl ByteSliceConversions for [u8]
     {
         let mut result : Option<Field> = Option::none();
 
-        let offsets = get_offsets(self);
+        let bytes : [u8] = self.parse_string();
+        let mut offsets : [Field; 5] = get_offsets(bytes);
 
         let first : Field = offsets[0];
         let second : Field = offsets[1];
@@ -138,17 +138,17 @@ impl ByteSliceConversions for [u8]
         // expect whole to have at least one digit and decimal point to be missing
         if ((first != second) & (offsets[2] == offsets[3]))
         {
-            let mut whole : Field = get_whole(self, first, second);
+            let mut whole : Field = get_whole(bytes, first, second);
             if (first == 1) { whole = -whole; }
 
             if (last != 0) // apply exponent
             {
-                let power : Field = get_whole(self, last, self.len());
+                let power : Field = get_whole(bytes, last, bytes.len());
 
                 let mut exponent : Field = 1;
                 for _ in 0..power { exponent *= 10; }
 
-                if (self[last - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
+                if (bytes[last - 1] == MINUS) { whole /= exponent; } else { whole *= exponent; }
             }
 
             result = Option::some(whole);
@@ -160,33 +160,38 @@ impl ByteSliceConversions for [u8]
     unconstrained
     pub fn as_array(self : [u8]) -> [[u8]]
     {
-        let mut result : [[u8]] = [];
+        let bytes : [u8] = self.parse_string();
 
-        let size : Field = (self.len() - 1);
-        if ((self[0] == BEGIN_ARRAY) & (self[size] == END_ARRAY))
+        let mut size : Field = bytes.len();
+        if (size == 0) | (size == 1) { [] }
+        else
         {
-            let mut value : [u8] = [];
-            let mut objects : Field = 0;
-            let mut arrays : Field = 0;
-            for i in 1..size
+            size -= 1;
+            if ((bytes[0] == BEGIN_ARRAY) & (bytes[size] == END_ARRAY))
             {
-                let byte = self[i];
-
-                arrays  += (((byte == BEGIN_ARRAY) as Field)  - ((byte == END_ARRAY) as Field));
-                objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
-
-                if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
+                let mut result : [[u8]] = [];
+                let mut value : [u8] = [];
+                let mut objects : Field = 0;
+                let mut arrays : Field = 0;
+                for i in 1..size
                 {
-                    result = result.push_back(value);
-                    value = [];
+                    let byte = bytes[i];
+
+                    arrays  += (((byte == BEGIN_ARRAY) as Field)  - ((byte == END_ARRAY) as Field));
+                    objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
+
+                    if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
+                    {
+                        result = result.push_back(value);
+                        value = [];
+                    }
+                    else { value = value.push_back(byte); }
                 }
-                else { value = value.push_back(byte); }
+
+                result.push_back(value)
             }
-
-            result = result.push_back(value);
+            else { [] }
         }
-
-        result
     }
 
     unconstrained
@@ -194,10 +199,14 @@ impl ByteSliceConversions for [u8]
     {
         let mut result : Object = Object::none();
 
-        if (self.len() == 3)
+        let bytes : [u8] = self.parse_string();
+        let size : Field = bytes.len();
+
+        if      ((size == 0) & (self.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
+        else if (size == 3)
         {
-            let index : u8 = self[1];
-            let OK = (self[0] == BEGIN_OBJECT) & (self[2] == END_OBJECT) & (index < (parent.children.len() as u8));
+            let index : u8 = bytes[1];
+            let OK = (bytes[0] == BEGIN_OBJECT) & (bytes[2] == END_OBJECT) & (index < (parent.children.len() as u8));
             if (OK) { result = Object { parent, doc: parent.children[index] }; }
         }
 
@@ -256,5 +265,10 @@ impl PropertyConversions for JSON
     pub fn get_array<N>(self : JSON, key : str<N>) -> [[u8]] { self.get(key).as_array() }
 
     unconstrained
-    pub fn get_object<N>(self : JSON, key : str<N>) -> Object { self.get(key).as_object(self) }
+    pub fn get_object<N>(self : JSON, key : str<N>) -> Object
+    {
+        let k = self.get(key);
+        // dep::std::println("KKK");
+        // k.print();
+        k.as_object(self) }
 }

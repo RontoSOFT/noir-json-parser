@@ -37,16 +37,48 @@ global FIELD_false : Field = 0x66616C7365;
 impl JSON
 {
     unconstrained
-    pub fn parse<SIZE>(string : str<SIZE>) -> JSON
+    pub fn parse<SIZE>(string : str<SIZE>) -> Self
     {
     //     dep::std::println("");
     //     dep::std::println(string);
     //     dep::std::println("");
-        JSON::parse_bytes(string.as_bytes(), &mut 0, SIZE, -1)
-    }
 
+        string.as_bytes().parse(&mut 0, SIZE, -1)
+    }
+}
+
+trait StringBytesParser
+{
+    fn parse_string(bytes : Self) -> Self;
+}
+
+impl StringBytesParser for [u8]
+{
     unconstrained
-    fn parse_bytes<SIZE>(bytes : [u8; SIZE], mut begin : &mut Field, end : Field, child_index : Field) -> JSON
+    fn parse_string(mut bytes : Self) -> Self
+    {
+        if (bytes.len() != 0)
+        {
+            if (bytes[0] == QUOTATION_MARK)
+            {
+                let json = bytes.parse(&mut 1, (bytes.len() - 1), -1);
+                if (!json.is_none()) { bytes = json.doc[0].value; }
+            }
+        }
+
+        bytes
+    }
+}
+
+trait BytesParser
+{
+    fn parse(bytes : Self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
+}
+
+impl<N> BytesParser for [u8; N]
+{
+    unconstrained
+    fn parse(bytes : Self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
@@ -57,7 +89,8 @@ impl JSON
 
         let mut byte_prev : u8 = 0;
 
-        let mut OK = true;
+        let child = (index != 0);
+        let mut OK = (index != end);
         let mut value = true;
         let mut done = false;
         let mut key_delimiter = false;
@@ -112,7 +145,7 @@ impl JSON
                         let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
                         let child_index : Field = (json.children.len() + child_index + 1);
 
-                        let child_json = JSON::parse_bytes(bytes, &mut index_local, (end - 1), child_index);
+                        let child_json = bytes.parse(&mut index_local, (end - 1), child_index);
 
                         OK = (child_json.doc.len() != 0);
                         if (OK)
@@ -157,7 +190,7 @@ impl JSON
 
                         object = false;
 
-                        if (*begin != 0)
+                        if (child)
                         {
                             *begin = index; // return child object's end index
                             index = end;
