@@ -18,18 +18,32 @@ use crate::globals::CHAR_t;
 use crate::JSON;
 use crate::Object;
 
-trait ByteArrayConversions
+trait ByteArrayConversionsSupport
 {
     fn get_whole(bytes : Self, begin : Field, end : Field) -> Field;
     fn get_offsets(bytes : Self) -> [Field; 5];
+}
 
-    fn as_bool(array : Self) -> Option<bool>;
-    fn as_field(array : Self) -> Option<Field>;
-    fn as_list(array : Self) -> [[u8]];
+trait ByteArrayConversions
+{
+    fn as_bool(bytes : Self) -> Option<bool>;
+    fn as_field(bytes : Self) -> Option<Field>;
+    fn as_list(bytes : Self) -> [[u8]];
     fn as_object(bytes : Self, parent : JSON) -> Object;
 }
 
-impl<N> ByteArrayConversions for [u8; N]
+trait PropertyConversions
+{
+    // linear search keys to return an Option slice containing associated value's bytes
+    fn get<N>(self, key : str<N>) -> [u8];
+
+    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
+    fn get_field<N>(self, key : str<N>) -> Option<Field>;
+    fn get_array<N>(self, key : str<N>) -> [[u8]];
+    fn get_object<N>(self, key : str<N>) -> Object;
+}
+
+impl<N> ByteArrayConversionsSupport for [u8; N]
 {
     unconstrained
     fn get_whole(bytes : Self, begin : Field, end : Field) -> Field
@@ -101,7 +115,10 @@ impl<N> ByteArrayConversions for [u8; N]
 
         result
     }
+}
 
+impl<N> ByteArrayConversions for [u8; N]
+{
     unconstrained
     pub fn as_bool(array : Self) -> Option<bool>
     {
@@ -218,15 +235,19 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 }
 
-trait PropertyConversions
+impl<N> ByteArrayConversions for str<N>
 {
-    // linear search keys to return an Option slice containing associated value's bytes
-    fn get<N>(self, key : str<N>) -> [u8];
+    unconstrained
+    pub fn as_bool(string : Self) -> Option<bool> { string.as_bytes().as_bool() }
 
-    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
-    fn get_field<N>(self, key : str<N>) -> Option<Field>;
-    fn get_array<N>(self, key : str<N>) -> [[u8]];
-    fn get_object<N>(self, key : str<N>) -> Object;
+    unconstrained
+    pub fn as_field(string : Self) -> Option<Field> { string.as_bytes().as_field() }
+
+    unconstrained
+    pub fn as_list(string : Self) -> [[u8]] { string.as_bytes().as_list() }
+
+    unconstrained
+    pub fn as_object(string : Self, parent : JSON) -> Object { string.as_bytes().as_object(parent) }
 }
 
 impl PropertyConversions for Object
