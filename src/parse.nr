@@ -49,19 +49,21 @@ impl JSON
 
 trait StringBytesParser
 {
-    fn parse_string(bytes : Self) -> Self;
+    fn parse_string(bytes : Self) -> [u8];
 }
 
-impl StringBytesParser for [u8]
+impl<N> StringBytesParser for [u8; N]
 {
     unconstrained
-    fn parse_string(mut bytes : Self) -> Self
+    fn parse_string(array : Self) -> [u8]
     {
-        if (bytes.len() != 0)
+        let mut bytes : [u8] = array.as_slice();
+
+        if (array.len() != 0)
         {
-            if (bytes[0] == QUOTATION_MARK)
+            if (array[0] == QUOTATION_MARK)
             {
-                let json = bytes.parse(&mut 1, (bytes.len() - 1), -1);
+                let json = array.parse(&mut 1, (array.len() - 1), -1);
                 if (!json.is_none()) { bytes = json.doc[0].value; }
             }
         }

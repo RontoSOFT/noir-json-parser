@@ -18,29 +18,18 @@ use crate::globals::CHAR_t;
 use crate::JSON;
 use crate::Object;
 
-trait ByteSliceConversions
+trait ByteArrayConversions
 {
     fn get_whole(bytes : Self, begin : Field, end : Field) -> Field;
     fn get_offsets(bytes : Self) -> [Field; 5];
 
-    fn as_bool(bytes : Self) -> Option<bool>;
-    fn as_field(bytes : Self) -> Option<Field>;
-    fn as_list(bytes : Self) -> [[u8]];
+    fn as_bool(array : Self) -> Option<bool>;
+    fn as_field(array : Self) -> Option<Field>;
+    fn as_list(array : Self) -> [[u8]];
     fn as_object(bytes : Self, parent : JSON) -> Object;
 }
 
-trait PropertyConversions
-{
-    // linear search keys to return an Option slice containing associated value's bytes
-    fn get<N>(self, key : str<N>) -> [u8];
-
-    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
-    fn get_field<N>(self, key : str<N>) -> Option<Field>;
-    fn get_array<N>(self, key : str<N>) -> [[u8]];
-    fn get_object<N>(self, key : str<N>) -> Object;
-}
-
-impl ByteSliceConversions for [u8]
+impl<N> ByteArrayConversions for [u8; N]
 {
     unconstrained
     fn get_whole(bytes : Self, begin : Field, end : Field) -> Field
@@ -114,9 +103,9 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_bool(mut bytes : Self) -> Option<bool>
+    pub fn as_bool(array : Self) -> Option<bool>
     {
-        bytes = bytes.parse_string();
+        let bytes : [u8] = array.parse_string();
 
         if (bytes.len() == 0) { Option::none() }
         else
@@ -128,9 +117,9 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_field(mut bytes : Self) -> Option<Field>
+    pub fn as_field(array : Self) -> Option<Field>
     {
-        bytes = bytes.parse_string();
+        let bytes : [u8] = array.parse_string();
 
         let mut offsets : [Field; 5] = bytes.get_offsets();
 
@@ -163,9 +152,9 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_list(mut bytes : Self) -> [[u8]]
+    pub fn as_list(array : Self) -> [[u8]]
     {
-        bytes = bytes.parse_string();
+        let bytes : [u8] = array.parse_string();
 
         let mut size : Field = bytes.len();
         if (size == 0) | (size == 1) { [] }
@@ -227,6 +216,17 @@ impl ByteSliceConversions for [u8]
 
         result
     }
+}
+
+trait PropertyConversions
+{
+    // linear search keys to return an Option slice containing associated value's bytes
+    fn get<N>(self, key : str<N>) -> [u8];
+
+    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
+    fn get_field<N>(self, key : str<N>) -> Option<Field>;
+    fn get_array<N>(self, key : str<N>) -> [[u8]];
+    fn get_object<N>(self, key : str<N>) -> Object;
 }
 
 impl PropertyConversions for Object
