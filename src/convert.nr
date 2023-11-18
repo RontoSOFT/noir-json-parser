@@ -298,8 +298,7 @@ impl PropertyConversions for Object
         let mut result : [u8] = [];
 
         let key_bytes : [u8; N] = key.as_bytes();
-        let size : Field = self.doc.len();
-        for i in 0..size { if (result.len() == 0) { if (self.doc[i].key.eq(key_bytes)) { result = self.doc[i].value; } } }
+        for prop in self.doc { if (result.len() == 0) { if (prop.key.eq(key_bytes)) { result = prop.value; } } }
 
         result
     }
@@ -328,8 +327,7 @@ impl PropertyConversions for JSON
         let mut result : [u8] = [];
 
         let key_bytes : [u8; N] = key.as_bytes();
-        let size : Field = self.doc.len();
-        for i in 0..size { if (result.len() == 0) { if (self.doc[i].key.eq(key_bytes)) { result = self.doc[i].value; } } }
+        for prop in self.doc { if (result.len() == 0) { if (prop.key.eq(key_bytes)) { result = prop.value; } } }
 
         result
     }
