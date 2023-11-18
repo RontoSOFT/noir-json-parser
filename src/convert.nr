@@ -5,6 +5,7 @@ use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
 use crate::globals::END_OBJECT;
 use crate::globals::VALUE_DELIMITER;
+use crate::globals::QUOTATION_MARK;
 use crate::globals::PLUS;
 use crate::globals::MINUS;
 use crate::globals::POINT;
@@ -30,6 +31,7 @@ trait ByteArrayConversions
     fn as_field(bytes : Self) -> Option<Field>;
     fn as_list(bytes : Self) -> [[u8]];
     fn as_object(bytes : Self, parent : JSON) -> Object;
+    fn as_json(bytes : Self) -> JSON;
 }
 
 trait PropertyConversions
@@ -210,28 +212,40 @@ impl<N> ByteArrayConversions for [u8; N]
     {
         let mut result : Object = Object::none();
 
-        if (bytes.len() != 0)
+        let size : Field = bytes.len();
+        if (size != 0)
         {
-            if (bytes[0] == crate::globals::QUOTATION_MARK)
+            if (bytes[0] == QUOTATION_MARK)
             {
                 let json = bytes.parse(&mut 1, (bytes.len() - 1), -1);
-                if (!json.is_none()) { result = Object { parent: json, doc: json.doc }; }
+                if (!json.is_none()) { result.doc = json.doc; }
             }
             else
             {
-                let size = bytes.len();
                 let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
 
-                if      (OK & (size == 2) & (bytes.len() as u64) > 2) { result = Object { parent, doc: [crate::Property::none()] }; }
-                else if (OK & (size == 3))
+                if (OK & (size == 3))
                 {
                     let index : u8 = bytes[1];
                     if (index < (parent.children.len() as u8)) { result = Object { parent, doc: parent.children[index] }; }
                 }
+                else if (OK & (size != 1)) { result.doc = [crate::Property::none()]; }
             }
         }
 
         result
+    }
+
+    unconstrained
+    pub fn as_json(bytes : Self) -> JSON
+    {
+        let mut size : Field = bytes.len();
+        if (size == 0) { JSON::none() }
+        else
+        {
+            let mut offset : Field = ((bytes[0] == QUOTATION_MARK) as Field);
+            bytes.parse(&mut offset, (size - offset), -1)
+        }
     }
 }
 
@@ -248,6 +262,9 @@ impl<N> ByteArrayConversions for str<N>
 
     unconstrained
     pub fn as_object(string : Self, parent : JSON) -> Object { string.as_bytes().as_object(parent) }
+
+    unconstrained
+    pub fn as_json(string : Self) -> JSON { string.as_bytes().as_json() }
 }
 
 impl PropertyConversions for Object
