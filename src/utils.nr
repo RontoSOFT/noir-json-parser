@@ -10,27 +10,40 @@ global chars =
     "{","|","}","~"
 ];
 
-trait ByteArrayExtensions
+trait ByteArrayEqualityExtension
 {
     fn eq<N>(bytes : Self, right : [u8; N]) -> bool;
+}
+
+trait ByteArrayExtensions
+{
     fn eq_string<N>(bytes : Self, right : str<N>) -> bool;
     fn as_array<N>(bytes : [u8; N]) -> Self;
     fn print(bytes : Self);
 }
 
-impl<SIZE> ByteArrayExtensions for [u8; SIZE]
+impl<SIZE> ByteArrayEqualityExtension for str<SIZE>
+{
+    unconstrained
+    pub fn eq<N>(string : Self, right : [u8; N]) -> bool { string.as_bytes().eq(right) }
+}
+
+impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
 {
     unconstrained
     pub fn eq<N>(bytes : Self, right : [u8; N]) -> bool
     {
-        let size = bytes.len();
+        let size : Field = bytes.len();
         let mut result = (size == right.len());
         if (result) { for i in 0..size { result &= (bytes[i] == right[i]); } }
         result
     }
+}
 
+impl<SIZE> ByteArrayExtensions for [u8; SIZE]
+{
     unconstrained
-    pub fn eq_string<N>(bytes : Self, right : str<N>) -> bool { right.as_bytes().eq(bytes) }
+    pub fn eq_string<N>(bytes : Self, right : str<N>) -> bool { right.eq(bytes) }
 
     unconstrained
     pub fn as_array<N>(bytes : [u8; N]) -> Self

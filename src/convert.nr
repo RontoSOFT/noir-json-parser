@@ -29,6 +29,7 @@ trait ByteArrayConversions
 {
     fn as_bool(bytes : Self) -> Option<bool>;
     fn as_field(bytes : Self) -> Option<Field>;
+    fn as_string(bytes : Self) -> [u8];
     fn as_list(bytes : Self) -> [[u8]];
     fn as_object(bytes : Self, parent : JSON) -> Object;
     fn as_json(bytes : Self) -> JSON;
@@ -41,6 +42,7 @@ trait PropertyConversions
 
     fn get_bool<N>(self, key : str<N>) -> Option<bool>;
     fn get_field<N>(self, key : str<N>) -> Option<Field>;
+    fn get_string<N>(self, key : str<N>) -> [u8];
     fn get_array<N>(self, key : str<N>) -> [[u8]];
     fn get_object<N>(self, key : str<N>) -> Object;
 }
@@ -171,6 +173,24 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
+    pub fn as_string(array : Self) -> [u8]
+    {
+        let mut bytes : [u8] = [];
+
+        let mut size : Field = array.len();
+        if (size != 0)
+        {
+            size -= 1;
+            if (array[0] == QUOTATION_MARK) & (array[size] == QUOTATION_MARK)
+            {
+                for i in 1..size { bytes = bytes.push_back(array[i]); }
+            }
+        }
+
+        bytes
+    }
+
+    unconstrained
     pub fn as_list(array : Self) -> [[u8]]
     {
         let bytes : [u8] = array.parse_string();
@@ -261,6 +281,9 @@ impl<N> ByteArrayConversions for str<N>
     pub fn as_list(string : Self) -> [[u8]] { string.as_bytes().as_list() }
 
     unconstrained
+    pub fn as_string(string : Self) -> [u8] { string.as_bytes().as_string() }
+
+    unconstrained
     pub fn as_object(string : Self, parent : JSON) -> Object { string.as_bytes().as_object(parent) }
 
     unconstrained
@@ -288,6 +311,9 @@ impl PropertyConversions for Object
     pub fn get_field<N>(self, key : str<N>) -> Option<Field> { self.get(key).as_field() }
 
     unconstrained
+    pub fn get_string<N>(self, key : str<N>) -> [u8] { self.get(key).as_string() }
+
+    unconstrained
     pub fn get_array<N>(self, key : str<N>) -> [[u8]] { self.get(key).as_list() }
 
     unconstrained
@@ -313,6 +339,9 @@ impl PropertyConversions for JSON
 
     unconstrained
     pub fn get_field<N>(self, key : str<N>) -> Option<Field> { self.get(key).as_field() }
+
+    unconstrained
+    pub fn get_string<N>(self, key : str<N>) -> [u8] { self.get(key).as_string() }
 
     unconstrained
     pub fn get_array<N>(self, key : str<N>) -> [[u8]] { self.get(key).as_list() }
