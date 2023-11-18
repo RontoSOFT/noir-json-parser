@@ -25,7 +25,7 @@ trait ByteSliceConversions
 
     fn as_bool(bytes : [u8]) -> Option<bool>;
     fn as_field(bytes : [u8]) -> Option<Field>;
-    fn as_array(bytes : [u8]) -> [[u8]];
+    fn as_list(bytes : [u8]) -> [[u8]];
     fn as_object(bytes : [u8], parent : JSON) -> Object;
 }
 
@@ -163,7 +163,7 @@ impl ByteSliceConversions for [u8]
     }
 
     unconstrained
-    pub fn as_array(mut bytes : [u8]) -> [[u8]]
+    pub fn as_list(mut bytes : [u8]) -> [[u8]]
     {
         bytes = bytes.parse_string();
 
@@ -250,7 +250,7 @@ impl PropertyConversions for Object
     pub fn get_field<N>(self : Object, key : str<N>) -> Option<Field> { self.get(key).as_field() }
 
     unconstrained
-    pub fn get_array<N>(self : Object, key : str<N>) -> [[u8]] { self.get(key).as_array() }
+    pub fn get_array<N>(self : Object, key : str<N>) -> [[u8]] { self.get(key).as_list() }
 
     unconstrained
     pub fn get_object<N>(self : Object, key : str<N>) -> Object { self.get(key).as_object(self.parent) }
@@ -277,7 +277,7 @@ impl PropertyConversions for JSON
     pub fn get_field<N>(self : JSON, key : str<N>) -> Option<Field> { self.get(key).as_field() }
 
     unconstrained
-    pub fn get_array<N>(self : JSON, key : str<N>) -> [[u8]] { self.get(key).as_array() }
+    pub fn get_array<N>(self : JSON, key : str<N>) -> [[u8]] { self.get(key).as_list() }
 
     unconstrained
     pub fn get_object<N>(self : JSON, key : str<N>) -> Object { self.get(key).as_object(self) }
