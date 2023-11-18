@@ -47,12 +47,13 @@ impl JSON
     }
 }
 
-trait StringBytesParser
+trait ByteArrayParser
 {
     fn parse_string(bytes : Self) -> [u8];
+    fn parse(bytes : Self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
-impl<N> StringBytesParser for [u8; N]
+impl<N> ByteArrayParser for [u8; N]
 {
     unconstrained
     fn parse_string(array : Self) -> [u8]
@@ -70,15 +71,7 @@ impl<N> StringBytesParser for [u8; N]
 
         bytes
     }
-}
 
-trait BytesParser
-{
-    fn parse(bytes : Self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
-}
-
-impl<N> BytesParser for [u8; N]
-{
     unconstrained
     fn parse(bytes : Self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
     {
