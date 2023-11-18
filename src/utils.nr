@@ -36,7 +36,8 @@ impl<SIZE> ByteArrayExtensions for [u8; SIZE]
     pub fn as_array<N>(bytes : [u8; N]) -> Self
     {
         let mut array : Self = [0; SIZE];
-        let mut size : u64 = if (SIZE < N) { SIZE } else { N };
+        let mut size : u64 = (bytes.len() as u64);
+        if (SIZE < size) { size = SIZE; }
         for i in 0..size { array[i] = bytes[i]; }
         array
     }
