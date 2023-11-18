@@ -125,9 +125,9 @@ impl<N> BytesParser for [u8; N]
                     string |= ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH) & !escaped);
 
                     let safe = !((byte == BACKSLASH) & escaped);
-                    if      (safe & value)  { prop.value = prop.value.push_back(byte); }
-                    else if (safe & string) { prop.key = prop.key.push_back(byte); }
-                    else if (safe)          { OK &= (prop.key.len() != 0); }
+                    if      (safe & value)  { prop.value = prop.value.push_back(byte); done = !(string | array); }
+                    else if (safe & string) { prop.key = prop.key.push_back(byte); OK = object; }
+                    else if (safe)          { OK = (prop.key.len() != 0); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -233,7 +233,7 @@ impl<N> BytesParser for [u8; N]
                     array_value = false;
                     key_delimiter = false;
                     value_delimiter = true;
-                    done = (OK & !array);
+                    done = (OK & !array & (prop.value.len() != 0));
 
                     if (array)
                     {
@@ -360,12 +360,13 @@ impl<N> BytesParser for [u8; N]
             }
         }
 
-        if (OK & !(object | array))
+        if (OK & !(object | array | string))
         {
             if (json.is_none())
             {
-                if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
+                OK  = (number & ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)));
+                OK |= (!number & literal & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)));
+                OK |= !value;
 
                 if (OK) { json.doc = [prop]; }
             }
