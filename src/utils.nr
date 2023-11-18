@@ -14,7 +14,7 @@ trait ByteArrayExtensions
 {
     fn eq<N>(bytes : Self, right : [u8; N]) -> bool;
     fn eq_string<N>(bytes : Self, right : str<N>) -> bool;
-    fn into_array(bytes : [u8]) -> Self;
+    fn as_array<N>(bytes : [u8; N]) -> Self;
     fn print(bytes : Self);
 }
 
@@ -33,11 +33,10 @@ impl<SIZE> ByteArrayExtensions for [u8; SIZE]
     pub fn eq_string<N>(bytes : Self, right : str<N>) -> bool { right.as_bytes().eq(bytes) }
 
     unconstrained
-    pub fn into_array(bytes : [u8]) -> Self
+    pub fn as_array<N>(bytes : [u8; N]) -> Self
     {
         let mut array : Self = [0; SIZE];
-        let mut size : u64 = (bytes.len() as u64);
-        if (SIZE < size) { size = SIZE; }
+        let mut size : u64 = if (SIZE < N) { SIZE } else { N };
         for i in 0..size { array[i] = bytes[i]; }
         array
     }
