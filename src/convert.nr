@@ -40,10 +40,10 @@ trait PropertyConversions
     // linear search keys to return an Option slice containing associated value's bytes
     fn get<N>(self, key : str<N>) -> [u8];
 
-    fn get_bool<N>(self, key : str<N>) -> Option<bool>;
-    fn get_field<N>(self, key : str<N>) -> Option<Field>;
-    fn get_string<N>(self, key : str<N>) -> [u8];
-    fn get_array<N>(self, key : str<N>) -> [[u8]];
+    fn get_bool<N>(self, key : str<N>) -> Option<bool> { self.get(key).as_bool() }
+    fn get_field<N>(self, key : str<N>) -> Option<Field> { self.get(key).as_field() }
+    fn get_string<N>(self, key : str<N>) -> [u8] { self.get(key).as_string() }
+    fn get_array<N>(self, key : str<N>) -> [[u8]] { self.get(key).as_list() }
     fn get_object<N>(self, key : str<N>) -> Object;
 }
 
@@ -304,18 +304,6 @@ impl PropertyConversions for Object
     }
 
     unconstrained
-    pub fn get_bool<N>(self, key : str<N>) -> Option<bool> { self.get(key).as_bool() }
-
-    unconstrained
-    pub fn get_field<N>(self, key : str<N>) -> Option<Field> { self.get(key).as_field() }
-
-    unconstrained
-    pub fn get_string<N>(self, key : str<N>) -> [u8] { self.get(key).as_string() }
-
-    unconstrained
-    pub fn get_array<N>(self, key : str<N>) -> [[u8]] { self.get(key).as_list() }
-
-    unconstrained
     pub fn get_object<N>(self, key : str<N>) -> Object { self.get(key).as_object(self.parent) }
 }
 
@@ -331,18 +319,6 @@ impl PropertyConversions for JSON
 
         result
     }
-
-    unconstrained
-    pub fn get_bool<N>(self, key : str<N>) -> Option<bool> { self.get(key).as_bool() }
-
-    unconstrained
-    pub fn get_field<N>(self, key : str<N>) -> Option<Field> { self.get(key).as_field() }
-
-    unconstrained
-    pub fn get_string<N>(self, key : str<N>) -> [u8] { self.get(key).as_string() }
-
-    unconstrained
-    pub fn get_array<N>(self, key : str<N>) -> [[u8]] { self.get(key).as_list() }
 
     unconstrained
     pub fn get_object<N>(self, key : str<N>) -> Object { self.get(key).as_object(self) }
