@@ -21,6 +21,15 @@ struct JSON
 ,   children : [[Property]]
 }
 
+trait Extensions
+{
+    fn none() -> Self;
+    fn len(self) -> Field { self.doc.len() }
+    fn is_none(self) -> bool { self.len() == 0 }
+    fn is_empty(self) -> bool { self.doc.is_empty() }
+    fn print(self);
+}
+
 impl Property
 {
     unconstrained
@@ -58,45 +67,42 @@ impl Property
     }
 }
 
-impl Object
+impl Extensions for [Property]
+{
+    unconstrained
+    fn none() -> Self { [] }
+
+    unconstrained
+    pub fn is_none(self) -> bool { self.len() == 0 }
+
+    unconstrained
+    pub fn len(self) -> Field { self.len() }
+
+    unconstrained
+    pub fn is_empty(self) -> bool { if (self.len() == 1) { self[0].is_none() } else { false } }
+
+    unconstrained
+    pub fn print(self) { for prop in self { prop.print(); } }
+}
+
+impl Extensions for Object
 {
     unconstrained
     fn none() -> Self { Self { parent: dep::std::unsafe::zeroed(), doc : [] } }
 
     unconstrained
-    pub fn is_none(self) -> bool { self.doc.len() == 0 }
-
-    unconstrained
-    pub fn is_empty(self) -> bool { if (self.doc.len() == 1) { self.doc[0].is_none() } else { false } }
-
-    unconstrained
-    pub fn len(self) -> Field { self.doc.len() }
-
-    unconstrained
-    pub fn print(self) { for prop in self.doc { prop.print(); } }
+    pub fn print(self) { self.doc.print(); }
 }
 
-impl JSON
+impl Extensions for JSON
 {
     unconstrained
     fn none() -> Self { Self { doc: [], children : [] } }
 
     unconstrained
-    pub fn is_none(self) -> bool { self.doc.len() == 0 }
-
-    unconstrained
-    pub fn is_empty(self) -> bool { if (self.doc.len() == 1) { self.doc[0].is_none() } else { false } }
-
-    unconstrained
-    pub fn len(self) -> Field { self.doc.len() }
-
-    unconstrained
-    pub fn child(self, index : u8) -> Object { Object { parent: self, doc: self.children[index] } }
-
-    unconstrained
     pub fn print(self)
     {
-        for prop in self.doc { prop.print(); }
+        self.doc.print();
 
         for i in 0..self.children.len()
         {
@@ -104,4 +110,10 @@ impl JSON
             for prop in self.children[i] { prop.print(); }
         }
     }
+}
+
+impl JSON
+{
+    unconstrained
+    pub fn child(self, index : u8) -> Object { Object { parent: self, doc: self.children[index] } }
 }
