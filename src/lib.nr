@@ -38,23 +38,19 @@ impl Property
         dep::std::println("value");
         dep::std::println("{");
 
-        let size : Field = self.value.len();
         let mut object = false;
-
-        for i in 0..size
+        for byte in self.value
         {
-            let byte = self.value[i];
-
-            if (object & (byte != crate::globals::END_OBJECT) & (byte != crate::globals::BACKSLASH))
+            if (object & (byte != globals::END_OBJECT) & (byte != globals::BACKSLASH))
             {
                 dep::std::println(f"        {byte}");
             }
             else
             {
-                let c = crate::utils::chars[byte];
+                let c = utils::chars[byte];
                 dep::std::println(f"    {c}");
 
-                object = (byte == crate::globals::BEGIN_OBJECT);
+                object = (byte == globals::BEGIN_OBJECT);
             }
         }
 
