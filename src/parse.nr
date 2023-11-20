@@ -37,14 +37,7 @@ global FIELD_false : Field = 0x66616C7365;
 impl JSON
 {
     unconstrained
-    pub fn parse<SIZE>(string : str<SIZE>) -> Self
-    {
-    //     dep::std::println("");
-    //     dep::std::println(string);
-    //     dep::std::println("");
-
-        string.as_bytes().parse(&mut 0, SIZE, -1)
-    }
+    pub fn parse<SIZE>(string : str<SIZE>) -> Self { string.as_bytes().parse(&mut 0, SIZE, -1) }
 }
 
 trait ByteArrayParser
@@ -89,6 +82,7 @@ impl<N> ByteArrayParser for [u8; N]
         let mut value = true;
         let mut done = false;
         let mut escaped = false;
+        let mut has_key = false;
         let mut key_delimiter = false;
         let mut value_delimiter = false;
         let mut object = false;
@@ -121,8 +115,8 @@ impl<N> ByteArrayParser for [u8; N]
 
                     let safe = !((byte == BACKSLASH) & escaped);
                     if      (safe & value)  { prop.value = prop.value.push_back(byte); done = !(string | array); }
-                    else if (safe & string) { prop.key = prop.key.push_back(byte); OK = object; }
-                    else if (safe)          { OK = (prop.key.len() != 0); }
+                    else if (safe & string) { prop.key = prop.key.push_back(byte); has_key = true; }
+                    else if (safe)          { OK = (object & has_key); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
@@ -167,12 +161,11 @@ impl<N> ByteArrayParser for [u8; N]
 
                         object = true;
                         value = false;
+                        has_key = false;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
                 {
-                    let has_value = (prop.value.len() != 0);
-
                     OK = (!value_delimiter | (value_delimiter & array_value));
 
                     if (byte == END_ARRAY)
@@ -181,12 +174,14 @@ impl<N> ByteArrayParser for [u8; N]
 
                         arrays -= 1;
                         array = (arrays != 0);
+                        done = (OK & !array);
                     }
                     else
                     {
-                        OK &= (object & ((prop.key.len() != 0) == has_value));
+                        OK &= (object & ((prop.key.len() != 0) == (prop.value.len() != 0)));
 
                         object = false;
+                        done = OK;
 
                         if (child)
                         {
@@ -194,19 +189,17 @@ impl<N> ByteArrayParser for [u8; N]
                             index = end;
                         }
                     }
-
-                    done = (OK & !array & has_value) | (bytes[end - 1] == QUOTATION_MARK);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
-                    OK = ((array | !(number | literal)) & !escaped);
+                    OK = (array | !(number | literal));
 
                     string = true;
                     escaped = (byte_prev == BACKSLASH);
 
                     if (value)
                     {
-                        OK = (!array_value | (array_value & value_delimiter));
+                        OK &= (!array_value | (array_value & value_delimiter));
 
                         prop.value = prop.value.push_back(byte);
                         array_value = true;
@@ -214,7 +207,7 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else if (byte == KEY_DELIMITER)
                 {
-                    OK = (object & !(key_delimiter | (prop.key.len() == 0)));
+                    OK = (object & has_key & !key_delimiter);
 
                     key_delimiter = true;
                     value = true;
@@ -228,7 +221,7 @@ impl<N> ByteArrayParser for [u8; N]
                     array_value = false;
                     key_delimiter = false;
                     value_delimiter = true;
-                    done = (OK & !array & (prop.value.len() != 0));
+                    done = (OK & !array & value);
 
                     if (array)
                     {
@@ -260,8 +253,8 @@ impl<N> ByteArrayParser for [u8; N]
                 {
                     if ((byte - ZERO) < 10)
                     {
-                        OK  = (!literal & (!digit_0 | (digit_0 & (fraction | e_E))));
-                        OK &= !(object & (prop.key.len() == 0));
+                        OK  = (!(literal | digit_0) | (digit_0 & (fraction | e_E)));
+                        OK &= (!object | has_key);
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
@@ -271,7 +264,7 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else if (byte == POINT)
                     {
-                        OK = (number & !fraction & !e_E);
+                        OK = (number & !(fraction | e_E));
                         fraction = true;
                     }
                     else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
@@ -325,13 +318,11 @@ impl<N> ByteArrayParser for [u8; N]
                     if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
                     else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
 
-                    if (OK)
+                    if (OK & value)
                     {
                         let mut copy : [Property] = [];
                         for current in json.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
                         json.doc = copy.push_back(prop);
-
-                        // prop.print();
                         prop = Property::none();
                     }
 
