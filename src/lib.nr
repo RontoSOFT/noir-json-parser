@@ -39,9 +39,12 @@ impl Property
     pub fn is_none(self) -> bool { (self.key.len() == 0) & (self.value.len() == 0) }
 
     unconstrained
-    pub fn print(self)
+    pub fn print(self) { self.print_index(0); }
+
+    unconstrained
+    fn print_index(self, index: Field)
     {
-        dep::std::println("key");
+        dep::std::println(f"key {index}");
         self.key.print();
 
         dep::std::println("value");
@@ -82,7 +85,7 @@ impl Extensions for [Property]
     pub fn is_empty(self) -> bool { if (self.len() == 1) { self[0].is_none() } else { false } }
 
     unconstrained
-    pub fn print(self) { for prop in self { prop.print(); } }
+    pub fn print(self) { for i in 0..self.len() { self[i].print_index(i); } }
 }
 
 impl Extensions for Object
@@ -106,7 +109,7 @@ impl Extensions for JSON
 
         for i in 0..self.children.len()
         {
-            dep::std::println(f"-- child #{i} --");
+            dep::std::println(f"-- child {i} --");
             for prop in self.children[i] { prop.print(); }
         }
     }
