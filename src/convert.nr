@@ -38,7 +38,9 @@ trait ByteArrayConversions
 
 trait PropertyLookup
 {
-    fn get<N> (self, key : str<N>) -> [u8];
+    fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), 0, self.len()) }
+
+    fn linear_search<N>(self, key : [u8; N], index : Field, size : Field) -> [u8];
 }
 
 trait PropertyConversions
@@ -296,16 +298,12 @@ impl<N> ByteArrayConversions for str<N>
 
 impl PropertyLookup for [Property]
 {
-    // linear search keys to return an Option slice containing associated value's bytes
     unconstrained
-    pub fn get<N>(self, key : str<N>) -> [u8]
+    pub fn linear_search<N>(self, key : [u8; N], index : Field, size : Field) -> [u8]
     {
-        let mut result : [u8] = [];
-
-        let key_bytes : [u8; N] = key.as_bytes();
-        for prop in self { if (result.len() == 0) { if (prop.key.eq(key_bytes)) { result = prop.value; } } }
-
-        result
+        if      (index == size)           { [] }
+        else if (key.eq(self[index].key)) { self[index].value }
+        else                              { self.linear_search(key, index + 1, size) }
     }
 }
 
