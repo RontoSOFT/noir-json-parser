@@ -22,18 +22,18 @@ use crate::Property;
 
 trait FieldConversion
 {
-    fn get_whole(bytes : Self, begin : Field, end : Field) -> Field;
-    fn get_offsets(bytes : Self) -> [Field; 5];
+    fn get_whole(self, begin : Field, end : Field) -> Field;
+    fn get_offsets(self) -> [Field; 5];
 }
 
 trait ByteArrayConversions
 {
-    fn as_bool(bytes : Self) -> Option<bool>;
-    fn as_field(bytes : Self) -> Option<Field>;
-    fn as_string(bytes : Self) -> [u8];
-    fn as_list(bytes : Self) -> [[u8]];
-    fn as_object(bytes : Self, parent : JSON) -> Object;
-    fn as_json(bytes : Self) -> JSON;
+    fn as_bool(self) -> Option<bool>;
+    fn as_field(self) -> Option<Field>;
+    fn as_string(self) -> [u8];
+    fn as_list(self) -> [[u8]];
+    fn as_object(self, parent : JSON) -> Object;
+    fn as_json(self) -> JSON;
 }
 
 trait PropertyLookup
@@ -57,16 +57,16 @@ trait PropertyConversions
 impl<N> FieldConversion for [u8; N]
 {
     unconstrained
-    fn get_whole(bytes : Self, begin : Field, end : Field) -> Field
+    fn get_whole(self, begin : Field, end : Field) -> Field
     {
         let mut it : Field = (end - 1); // walking in reverse
-        let mut whole : Field = ((bytes[it] as u4) as Field); // first digit is last in array
+        let mut whole : Field = ((self[it] as u4) as Field); // first digit is last in array
         let mut units : Field = 10;
 
         for _ in begin..it
         {
             it -= 1;
-            whole += (((bytes[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
+            whole += (((self[it] as u4) as Field) * units); // cast ASCII byte to integer digit number
             units *= 10;
         }
 
@@ -74,17 +74,17 @@ impl<N> FieldConversion for [u8; N]
     }
 
     unconstrained
-    fn get_offsets(bytes : Self) -> [Field; 5]
+    fn get_offsets(self) -> [Field; 5]
     {
         let mut result : [Field; 5] = [0; 5];
 
-        let size : Field = bytes.len();
+        let size : Field = self.len();
         if (size != 0)
         {
-            let start : Field = ((bytes[0] == MINUS) as Field);
+            let start : Field = ((self[0] == MINUS) as Field);
 
             // ensure at least one digit
-            let mut valid = if (size != 1) { (bytes[start] - ZERO) < 10 } else { (bytes[0] - ZERO) < 10 };
+            let mut valid = if (size != 1) { (self[start] - ZERO) < 10 } else { (self[0] - ZERO) < 10 };
 
             if (valid)
             {
@@ -96,7 +96,7 @@ impl<N> FieldConversion for [u8; N]
                 {
                     if (valid)
                     {
-                        let byte = bytes[i];
+                        let byte = self[i];
 
                         if (byte == POINT)
                         {
@@ -131,9 +131,9 @@ impl<N> FieldConversion for [u8; N]
 impl<N> ByteArrayConversions for [u8; N]
 {
     unconstrained
-    pub fn as_bool(array : Self) -> Option<bool>
+    pub fn as_bool(self) -> Option<bool>
     {
-        let bytes : [u8] = array.parse_string();
+        let bytes : [u8] = self.parse_string();
 
         if (bytes.len() == 0) { Option::none() }
         else
@@ -145,9 +145,9 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_field(array : Self) -> Option<Field>
+    pub fn as_field(self) -> Option<Field>
     {
-        let bytes : [u8] = array.parse_string();
+        let bytes : [u8] = self.parse_string();
 
         let mut offsets : [Field; 5] = bytes.get_offsets();
 
@@ -180,17 +180,17 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_string(array : Self) -> [u8]
+    pub fn as_string(self) -> [u8]
     {
         let mut bytes : [u8] = [];
 
-        let mut size : Field = array.len();
+        let mut size : Field = self.len();
         if (size != 0)
         {
             size -= 1;
-            if (array[0] == QUOTATION_MARK) & (array[size] == QUOTATION_MARK)
+            if (self[0] == QUOTATION_MARK) & (self[size] == QUOTATION_MARK)
             {
-                for i in 1..size { bytes = bytes.push_back(array[i]); }
+                for i in 1..size { bytes = bytes.push_back(self[i]); }
             }
         }
 
@@ -198,9 +198,9 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_list(array : Self) -> [[u8]]
+    pub fn as_list(self) -> [[u8]]
     {
-        let bytes : [u8] = array.parse_string();
+        let bytes : [u8] = self.parse_string();
 
         let mut size : Field = bytes.len();
         if (size == 0) | (size == 1) { [] }
@@ -235,25 +235,25 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_object(bytes : Self, parent : JSON) -> Object
+    pub fn as_object(self, parent : JSON) -> Object
     {
         let mut result : Object = Object::none();
 
-        let size : Field = bytes.len();
+        let size : Field = self.len();
         if (size != 0)
         {
-            if (bytes[0] == QUOTATION_MARK)
+            if (self[0] == QUOTATION_MARK)
             {
-                let json = bytes.parse(&mut 1, (bytes.len() - 1), -1);
+                let json = self.parse(&mut 1, (self.len() - 1), -1);
                 if (!json.is_none()) { result.doc = json.doc; }
             }
             else
             {
-                let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
+                let OK = ((self[0] == BEGIN_OBJECT) & (self[size - 1] == END_OBJECT));
 
                 if (OK & (size == 3))
                 {
-                    let index : u8 = bytes[1];
+                    let index : u8 = self[1];
                     if (index < (parent.children.len() as u8)) { result = Object { parent, doc: parent.children[index] }; }
                 }
                 else if (OK & (size != 1)) { result.doc = [crate::Property::none()]; }
@@ -264,14 +264,14 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_json(bytes : Self) -> JSON
+    pub fn as_json(self) -> JSON
     {
-        let mut size : Field = bytes.len();
+        let mut size : Field = self.len();
         if (size == 0) { JSON::none() }
         else
         {
-            let mut offset : Field = ((bytes[0] == QUOTATION_MARK) as Field);
-            bytes.parse(&mut offset, (size - offset), -1)
+            let mut offset : Field = ((self[0] == QUOTATION_MARK) as Field);
+            self.parse(&mut offset, (size - offset), -1)
         }
     }
 }

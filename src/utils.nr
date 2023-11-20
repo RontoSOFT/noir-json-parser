@@ -12,48 +12,48 @@ global chars =
 
 trait ByteArrayEqualityExtension
 {
-    fn eq<N>(bytes : Self, right : [u8; N]) -> bool;
-    fn less_than_or_eq<N>(bytes : Self, right : [u8; N]) -> (bool, bool);
+    fn eq<N>(self, other : [u8; N]) -> bool;
+    fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool);
 }
 
 trait ByteArrayExtensions
 {
-    fn eq_string<N>(bytes : Self, right : str<N>) -> bool;
+    fn eq_string<N>(self, other : str<N>) -> bool;
     fn as_array<N>(bytes : [u8; N]) -> Self;
-    fn print(bytes : Self);
+    fn print(self);
 }
 
 impl<SIZE> ByteArrayEqualityExtension for str<SIZE>
 {
     unconstrained
-    pub fn eq<N>(string : Self, right : [u8; N]) -> bool { string.as_bytes().eq(right) }
+    pub fn eq<N>(self, other : [u8; N]) -> bool { self.as_bytes().eq(other) }
 
     unconstrained
-    pub fn less_than_or_eq<N>(string : Self, right : [u8; N]) -> (bool, bool) { string.as_bytes().less_than_or_eq(right) }
+    pub fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool) { self.as_bytes().less_than_or_eq(other) }
 }
 
 impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
 {
     unconstrained
-    pub fn eq<N>(bytes : Self, right : [u8; N]) -> bool
+    pub fn eq<N>(self, other : [u8; N]) -> bool
     {
-        let size : Field = bytes.len();
-        let mut result = (size == right.len());
-        if (result) { for i in 0..size { result &= (bytes[i] == right[i]); } }
+        let size : Field = self.len();
+        let mut result = (size == other.len());
+        if (result) { for i in 0..size { result &= (self[i] == other[i]); } }
         result
     }
 
     unconstrained
-    pub fn less_than_or_eq<N>(bytes : Self, right : [u8; N]) -> (bool, bool)
+    pub fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool)
     {
-        let size_self : Field = bytes.len();
-        let size_right : Field = right.len();
+        let size_self : Field = self.len();
+        let size_right : Field = other.len();
 
         if (size_self == size_right)
         {
             let mut less_than = false;
             let mut equal = true;
-            for i in 0..size_self { if (equal & (bytes[i] != right[i])) { less_than = (bytes[i] < right[i]); equal = false; } }
+            for i in 0..size_self { if (equal & (self[i] != other[i])) { less_than = (self[i] < other[i]); equal = false; } }
 
             (less_than, equal)
         }
@@ -64,7 +64,7 @@ impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
 impl<SIZE> ByteArrayExtensions for [u8; SIZE]
 {
     unconstrained
-    pub fn eq_string<N>(bytes : Self, right : str<N>) -> bool { right.eq(bytes) }
+    pub fn eq_string<N>(self, other : str<N>) -> bool { other.eq(self) }
 
     unconstrained
     pub fn as_array<N>(bytes : [u8; N]) -> Self
@@ -77,10 +77,10 @@ impl<SIZE> ByteArrayExtensions for [u8; SIZE]
     }
 
     unconstrained
-    pub fn print(bytes : Self)
+    pub fn print(self)
     {
         dep::std::println("{");
-        for byte in bytes { let c = chars[byte]; dep::std::println(f"    {c}"); }
+        for byte in self { let c = chars[byte]; dep::std::println(f"    {c}"); }
         dep::std::println("}");
     }
 }
