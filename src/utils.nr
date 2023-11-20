@@ -13,6 +13,7 @@ global chars =
 trait ByteArrayEqualityExtension
 {
     fn eq<N>(bytes : Self, right : [u8; N]) -> bool;
+    fn less_than_or_eq<N>(bytes : Self, right : [u8; N]) -> (bool, bool);
 }
 
 trait ByteArrayExtensions
@@ -26,6 +27,9 @@ impl<SIZE> ByteArrayEqualityExtension for str<SIZE>
 {
     unconstrained
     pub fn eq<N>(string : Self, right : [u8; N]) -> bool { string.as_bytes().eq(right) }
+
+    unconstrained
+    pub fn less_than_or_eq<N>(string : Self, right : [u8; N]) -> (bool, bool) { string.as_bytes().less_than_or_eq(right) }
 }
 
 impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
@@ -37,6 +41,23 @@ impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
         let mut result = (size == right.len());
         if (result) { for i in 0..size { result &= (bytes[i] == right[i]); } }
         result
+    }
+
+    unconstrained
+    pub fn less_than_or_eq<N>(bytes : Self, right : [u8; N]) -> (bool, bool)
+    {
+        let size_self : Field = bytes.len();
+        let size_right : Field = right.len();
+
+        if (size_self == size_right)
+        {
+            let mut less_than = false;
+            let mut equal = true;
+            for i in 0..size_self { if (equal & (bytes[i] != right[i])) { less_than = (bytes[i] < right[i]); equal = false; } }
+
+            (less_than, equal)
+        }
+        else { (((size_self as u64) < (size_right as u64)), false) }
     }
 }
 

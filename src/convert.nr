@@ -38,9 +38,10 @@ trait ByteArrayConversions
 
 trait PropertyLookup
 {
-    fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), 0, self.len()) }
+    fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), (self.len() - 1)) } // { self.binary_search(key.as_bytes(), 0, ((self.len() as u64) - 1)) } // { self.linear_search(key.as_bytes(), (self.len() - 1)) } //
 
-    fn linear_search<N>(self, key : [u8; N], index : Field, size : Field) -> [u8];
+    fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8];
+    fn binary_search<N>(self, key : [u8; N], left : u64, right : u64) -> [u8];
 }
 
 trait PropertyConversions
@@ -299,11 +300,26 @@ impl<N> ByteArrayConversions for str<N>
 impl PropertyLookup for [Property]
 {
     unconstrained
-    pub fn linear_search<N>(self, key : [u8; N], index : Field, size : Field) -> [u8]
+    pub fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8]
     {
-        if      (index == size)           { [] }
+        if      (index == -1)             { [] }
         else if (key.eq(self[index].key)) { self[index].value }
-        else                              { self.linear_search(key, index + 1, size) }
+        else                              { self.linear_search(key, (index - 1)) }
+    }
+
+    unconstrained
+    pub fn binary_search<N>(self, key : [u8; N], left : u64, right : u64) -> [u8]
+    {
+        if (left == (right + 1)) { [] }
+        else
+        {
+            let middle = ((left + right) / 2);
+            let (less_than, equal) = key.less_than_or_eq(self[middle].key);
+
+            if      (equal)     { self[middle].value }
+            else if (less_than) { self.binary_search(key, left, (middle - 1)) }
+            else                { self.binary_search(key, (middle + 1), right) }
+        }
     }
 }
 
