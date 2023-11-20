@@ -38,6 +38,35 @@ impl JSON
 {
     unconstrained
     pub fn parse<SIZE>(string : str<SIZE>) -> Self { string.as_bytes().parse(&mut 0, SIZE, -1) }
+
+    unconstrained
+    pub fn store(self, prop : Property) -> [Property]
+    {
+        let mut copy : [Property] = [];
+
+        // linear insert
+        for current in self.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
+        copy.push_back(prop)
+
+        // // sorted insert
+        // let mut inserted = false;
+        // for current in self.doc
+        // {
+        //     if (inserted) { copy = copy.push_back(current); }
+        //     else
+        //     {
+        //         let (less_than, equal) = prop.key.less_than_or_eq(current.key);
+        //         if (less_than | equal)
+        //         {
+        //             copy = copy.push_back(prop);
+        //             inserted = true;
+        //         }
+
+        //         if (!equal) { copy = copy.push_back(current); }
+        //     }
+        // }
+        // if (inserted) { copy } else { copy.push_back(prop) }
+    }
 }
 
 trait ByteArrayParser
@@ -320,9 +349,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                     if (OK & value)
                     {
-                        let mut copy : [Property] = [];
-                        for current in json.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
-                        json.doc = copy.push_back(prop);
+                        json.doc = json.store(prop);
                         prop = Property::none();
                     }
 
