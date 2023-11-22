@@ -270,13 +270,10 @@ impl<N> ByteArrayParser for [u8; N]
                         e_digit = false;
                     }
                 }
-                else if ((byte == SPACE) | (byte == TAB) | (byte == NEWLINE) | (byte == RETURN) | (byte == BACKSLASH))
+                else if ((byte < 0x21) | (byte == BACKSLASH))
                 {
-                    done = ((number | literal) & (byte != BACKSLASH));
-                }
-                else if (byte == 0x00)
-                {
-                    OK = (!(object | array) & (index == end));
+                    done = ((number | literal) & !(array | (byte == BACKSLASH)));
+                    OK = (byte != 0x00) | ((byte == 0x00) & (!(object | array) & (index == end)));
                 }
                 else
                 {
