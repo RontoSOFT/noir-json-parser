@@ -24,14 +24,7 @@ global FIELD_t     : Field = 0x74;
 global FIELD_tr    : Field = 0x7472;
 global FIELD_tru   : Field = 0x747275;
 global FIELD_true  : Field = 0x74727565;
-global FIELD_n     : Field = 0x6E;
-global FIELD_nu    : Field = 0x6E75;
-global FIELD_nul   : Field = 0x6E756C;
 global FIELD_null  : Field = 0x6E756C6C;
-global FIELD_f     : Field = 0x66;
-global FIELD_fa    : Field = 0x6661;
-global FIELD_fal   : Field = 0x66616C;
-global FIELD_fals  : Field = 0x66616C73;
 global FIELD_false : Field = 0x66616C7365;
 
 impl JSON
@@ -149,17 +142,17 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
+                    OK = value;
+
                     if (byte == BEGIN_ARRAY)
                     {
-                        OK = (!array_value | (array_value & value_delimiter));
+                        OK &= (!array_value | (array_value & value_delimiter));
 
                         prop.value = prop.value.push_back(byte);
                         array_value = array;
 
                         arrays += 1;
                         array = true;
-
-                        OK &= value;
                     }
                     else if (object | array)
                     {
@@ -186,8 +179,6 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else
                     {
-                        OK &= value;
-
                         object = true;
                         value = false;
                         has_key = false;
@@ -250,7 +241,7 @@ impl<N> ByteArrayParser for [u8; N]
                     array_value = false;
                     key_delimiter = false;
                     value_delimiter = true;
-                    done = (OK & !array & value);
+                    done = (OK & !array);
 
                     if (array)
                     {
@@ -270,16 +261,11 @@ impl<N> ByteArrayParser for [u8; N]
                         e_digit = false;
                     }
                 }
-                else if ((byte < 0x21) | (byte == BACKSLASH))
-                {
-                    done = ((number | literal) & !(array | (byte == BACKSLASH)));
-                    OK = (byte != 0x00) | ((byte == 0x00) & (!(object | array) & (index == end)));
-                }
-                else
+                else if ((byte > SPACE) & (byte != BACKSLASH))
                 {
                     if ((byte - ZERO) < 10)
                     {
-                        OK  = (!(literal | digit_0) | (digit_0 & (fraction | e_E)));
+                        OK  = (value & !(literal | digit_0) | (digit_0 & (fraction | e_E)));
                         OK &= (!object | has_key);
 
                         number = true;
@@ -313,36 +299,28 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else
                     {
+                        OK = !number;
+
+                        literal = true;
+
                         literal_field *= 256;
                         literal_field += (byte as Field);
-
-                        literal  = (literal_field == FIELD_t);
-                        literal |= (literal_field == FIELD_tr);
-                        literal |= (literal_field == FIELD_tru);
-                        literal |= (literal_field == FIELD_true);
-                        literal |= (literal_field == FIELD_n);
-                        literal |= (literal_field == FIELD_nu);
-                        literal |= (literal_field == FIELD_nul);
-                        literal |= (literal_field == FIELD_null);
-                        literal |= (literal_field == FIELD_f);
-                        literal |= (literal_field == FIELD_fa);
-                        literal |= (literal_field == FIELD_fal);
-                        literal |= (literal_field == FIELD_fals);
-                        literal |= (literal_field == FIELD_false);
-
-                        OK = (!number & literal);
                     }
-
-                    OK &= value;
 
                     prop.value = prop.value.push_back(byte);
                     array_value = true;
                 }
+                else
+                {
+                    OK = (byte != 0x00) | ((byte == 0x00) & (!(object | array) & (index == end)));
+                    done = ((number | literal) & !(array | (byte == BACKSLASH)));
+                }
 
                 if (done)
                 {
-                    if      (number)  { OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)); }
-                    else if (literal) { OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)); }
+                    OK = !(number | literal)
+                        | ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
+                        | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false));
 
                     if (OK & value)
                     {
@@ -374,9 +352,9 @@ impl<N> ByteArrayParser for [u8; N]
         {
             if (json.is_none())
             {
-                OK  = (number & ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)));
-                OK |= (!number & literal & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)));
-                OK |= !value;
+                OK =  (((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)))
+                    | (!number & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)))
+                    | !value;
 
                 if (OK) { json.doc = [prop]; }
             }
