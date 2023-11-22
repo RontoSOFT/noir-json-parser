@@ -44,28 +44,28 @@ impl JSON
     {
         let mut copy : [Property] = [];
 
-        // linear insert
-        for current in self.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
-        copy.push_back(prop)
+        // // linear insert
+        // for current in self.doc { if (prop.id != current.id) { copy = copy.push_back(current); } }
+        // copy.push_back(prop)
 
-        // // sorted insert
-        // let mut inserted = false;
-        // for current in self.doc
-        // {
-        //     if (inserted) { copy = copy.push_back(current); }
-        //     else
-        //     {
-        //         let (less_than, equal) = prop.key.less_than_or_eq(current.key);
-        //         if (less_than | equal)
-        //         {
-        //             copy = copy.push_back(prop);
-        //             inserted = true;
-        //         }
+        // sorted insert
+        let mut inserted = false;
+        for current in self.doc
+        {
+            if (inserted) { copy = copy.push_back(current); }
+            else
+            {
+                if (prop.id as u127 <= current.id as u127)
+                // if (prop.id <= current.id)
+                {
+                    copy = copy.push_back(prop);
+                    inserted = true;
+                }
 
-        //         if (!equal) { copy = copy.push_back(current); }
-        //     }
-        // }
-        // if (inserted) { copy } else { copy.push_back(prop) }
+                if (prop.id != current.id) { copy = copy.push_back(current); }
+            }
+        }
+        if (inserted) { copy } else { copy.push_back(prop) }
     }
 }
 
@@ -100,6 +100,7 @@ impl<N> ByteArrayParser for [u8; N]
         let mut json = JSON::none();
         let mut prop = Property::none();
 
+        let mut coeff : Field = 1;
         let mut arrays : Field = 0;
         let mut literal_field : Field = 0;
         let mut index : Field = *begin;
@@ -144,7 +145,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                     let safe = !((byte == BACKSLASH) & escaped);
                     if      (safe & value)  { prop.value = prop.value.push_back(byte); done = !(string | array); }
-                    else if (safe & string) { prop.key = prop.key.push_back(byte); has_key = true; }
+                    else if (safe & string) { has_key = true; prop.id += ((byte as Field) * coeff); coeff *= 256; }
                     else if (safe)          { OK = (object & has_key); }
                 }
                 else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
@@ -207,7 +208,7 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else
                     {
-                        OK &= (object & ((prop.key.len() != 0) == (prop.value.len() != 0)));
+                        OK &= (object & ((prop.id != 0) == (prop.value.len() != 0)));
 
                         object = false;
                         done = OK;
@@ -353,6 +354,7 @@ impl<N> ByteArrayParser for [u8; N]
                         prop = Property::none();
                     }
 
+                    coeff = 1;
                     literal_field = 0;
                     done = false;
                     value = false;

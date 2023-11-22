@@ -40,8 +40,8 @@ trait PropertyLookup
 {
     fn get<N> (self, key : str<N>) -> [u8];
 
-    fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8];
-    fn binary_search<N>(self, key : [u8; N], left : Field, right : Field) -> [u8];
+    fn linear_search(self, id : Field, index : Field) -> [u8];
+    fn binary_search<N>(self, id : Field, left : Field, right : Field) -> [u8];
 }
 
 trait PropertyConversions
@@ -300,29 +300,63 @@ impl<N> ByteArrayConversions for str<N>
 impl PropertyLookup for [Property]
 {
     unconstrained
-    pub fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), (self.len() - 1)) }
+    // pub fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), (self.len() - 1)) }
     // pub fn get<N> (self, key : str<N>) -> [u8] { self.binary_search(key.as_bytes(), 0, (self.len() - 1)) }
-
-    unconstrained
-    pub fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8]
+    pub fn get<N> (self, key : str<N>) -> [u8]
     {
-        if      (index == -1)             { [] }
-        else if (key.eq(self[index].key)) { self[index].value }
-        else                              { self.linear_search(key, (index - 1)) }
+        let bytes = key.as_bytes();
+
+        let mut coeff : Field = 1;
+        let mut id : Field = 0;
+        for i in 0..bytes.len()
+        {
+            id += ((bytes[i] as Field) * coeff);
+            coeff *= 256;
+        }
+
+        // self.linear_search(id, self.len())
+        self.binary_search(id, 0, (self.len() - 1))
     }
 
     unconstrained
-    pub fn binary_search<N>(self, key : [u8; N], left : Field, right : Field) -> [u8]
+    pub fn linear_search(self, id : Field, mut index : Field) -> [u8]
+    {
+        index -= 1;
+
+        if      (index == -1)          { [] }
+        else if (self[index].id == id) { self[index].value }
+        else                           { self.linear_search(id, index) }
+    }
+
+    unconstrained
+    pub fn binary_search<N>(self, id : Field, left : Field, right : Field) -> [u8]
     {
         if (left == (right + 1)) { [] }
         else
         {
-            let middle : Field = ((((left + right) as u64) / 2) as Field);
-            let (less_than, equal) = key.less_than_or_eq(self[middle].key);
+            let middle : Field = (((left + right) as u64 / 2) as Field);
 
-            if      (equal)     { self[middle].value }
-            else if (less_than) { self.binary_search(key, left, (middle - 1)) }
-            else                { self.binary_search(key, (middle + 1), right) }
+            // let id_key : u127 = self[middle].id;
+
+            // if      (id_key == id) { self[middle].value }
+            // else if (id_key <  id) { self.binary_search(id, (middle + 1), right) }
+            // else                   { self.binary_search(id, left, (middle - 1)) }
+
+            let id_u : u127 = (id as u127);
+            let id_key : u127 = (self[middle].id as u127);
+
+            if      (id_key == id_u) { self[middle].value }
+            else if (id_key <  id_u) { self.binary_search(id, (middle + 1), right) }
+            else                     { self.binary_search(id, left, (middle - 1)) }
+
+            // let id_1 : u127 = (id as u127);
+            // let id_2 : u127 = (((id - (id_1 as Field)) / 170141183460469231731687303715884105728) as u127);
+            // let key_id_1 : u127 = (id_field as u127);
+            // let key_id_2 : u127 = (((id_field - (key_id_1 as Field)) / 170141183460469231731687303715884105728) as u127);
+
+            // if      ((id_1 == key_id_1) & (id_2 == key_id_2)) { self[middle].value }
+            // else if ((id_1 <= key_id_1) & (id_2 <= key_id_2)) { self.binary_search(id, left, (middle - 1)) }
+            // else                                              { self.binary_search(id, (middle + 1), right) }
         }
     }
 }

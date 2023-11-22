@@ -5,7 +5,7 @@ mod utils;
 
 struct Property
 {
-    key : [u8],
+    id : Field, // u127
     value : [u8],
 }
 
@@ -33,10 +33,10 @@ trait Extensions
 impl Property
 {
     unconstrained
-    fn none() -> Self { Self { key: [], value: [] } }
+    fn none() -> Self { Self { id : 0, value: [] } }
 
     unconstrained
-    pub fn is_none(self) -> bool { (self.key.len() == 0) & (self.value.len() == 0) }
+    pub fn is_none(self) -> bool { (self.id == 0) & (self.value.len() == 0) }
 
     unconstrained
     pub fn print(self) { self.print_index(0); }
@@ -45,7 +45,8 @@ impl Property
     fn print_index(self, index: Field)
     {
         dep::std::println(f"key {index}");
-        self.key.print();
+        dep::std::println(self.id);
+        // self.key.print();
 
         dep::std::println("value");
         dep::std::println("{");
