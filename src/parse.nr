@@ -33,7 +33,7 @@ impl JSON
     pub fn parse<SIZE>(string : str<SIZE>) -> Self { string.as_bytes().parse(&mut 0, SIZE, -1) }
 
     unconstrained
-    pub fn store(self, prop : Property) -> [Property]
+    fn store(self, prop : Property) -> [Property]
     {
         let mut copy : [Property] = [];
 
@@ -64,22 +64,22 @@ impl JSON
 
 trait ByteArrayParser
 {
-    fn parse_string(bytes : Self) -> [u8];
-    fn parse(bytes : Self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
+    fn parse_string(self) -> [u8];
+    fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
 impl<N> ByteArrayParser for [u8; N]
 {
     unconstrained
-    fn parse_string(array : Self) -> [u8]
+    fn parse_string(self) -> [u8]
     {
-        let mut bytes : [u8] = array.as_slice();
+        let mut bytes : [u8] = self.as_slice();
 
-        if (array.len() != 0)
+        if (self.len() != 0)
         {
-            if (array[0] == QUOTATION_MARK)
+            if (self[0] == QUOTATION_MARK)
             {
-                let json = array.parse(&mut 1, (array.len() - 1), -1);
+                let json = self.parse(&mut 1, (self.len() - 1), -1);
                 if (!json.is_none()) { bytes = json.doc[0].value; }
             }
         }
@@ -88,7 +88,7 @@ impl<N> ByteArrayParser for [u8; N]
     }
 
     unconstrained
-    fn parse(bytes : Self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
+    fn parse(self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
@@ -127,7 +127,7 @@ impl<N> ByteArrayParser for [u8; N]
         {
             if (OK & (index != end))
             {
-                let byte = bytes[index];
+                let byte = self[index];
                 index += 1;
 
                 if (string)
@@ -159,7 +159,7 @@ impl<N> ByteArrayParser for [u8; N]
                         let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
                         let child_index : Field = (json.children.len() + child_index + 1);
 
-                        let child_json = bytes.parse(&mut index_local, (end - 1), child_index);
+                        let child_json = self.parse(&mut index_local, (end - 1), child_index);
 
                         OK = (child_json.doc.len() != 0);
                         if (OK)
