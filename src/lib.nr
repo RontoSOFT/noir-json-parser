@@ -25,7 +25,7 @@ trait Extensions
 {
     fn none() -> Self;
     fn len(self) -> Field { self.doc.len() }
-    fn is_none(self) -> bool { self.len() == 0 }
+    fn is_none(self) -> bool { self.doc.len() == 0 }
     fn is_empty(self) -> bool { self.doc.is_empty() }
     fn print(self);
 }
