@@ -37,8 +37,8 @@ impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
     unconstrained
     pub fn eq<N>(self, other : [u8; N]) -> bool
     {
-        let size : Field = self.len();
-        let mut result = (size == other.len());
+        let size : u64 = (self.len() as u64);
+        let mut result = (size == other.len() as u64);
         if (result) { for i in 0..size { result &= (self[i] == other[i]); } }
         result
     }
@@ -46,8 +46,8 @@ impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
     unconstrained
     pub fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool)
     {
-        let size_self : Field = self.len();
-        let size_right : Field = other.len();
+        let size_self : u64 = (self.len() as u64);
+        let size_right : u64 = (other.len() as u64);
 
         if (size_self == size_right)
         {
@@ -57,7 +57,7 @@ impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
 
             (less_than, equal)
         }
-        else { (((size_self as u64) < (size_right as u64)), false) }
+        else { ((size_self < size_right), false) }
     }
 }
 

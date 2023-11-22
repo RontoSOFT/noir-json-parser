@@ -22,8 +22,8 @@ use crate::Property;
 
 trait FieldConversion
 {
-    fn get_whole(self, begin : Field, end : Field) -> Field;
-    fn get_offsets(self) -> [Field; 5];
+    fn get_whole(self, begin : u64, end : u64) -> Field;
+    fn get_offsets(self) -> [u64; 5];
 }
 
 trait ByteArrayConversions
@@ -57,9 +57,9 @@ trait PropertyConversions
 impl<N> FieldConversion for [u8; N]
 {
     unconstrained
-    fn get_whole(self, begin : Field, end : Field) -> Field
+    fn get_whole(self, begin : u64, end : u64) -> Field
     {
-        let mut it : Field = (end - 1); // walking in reverse
+        let mut it : u64 = (end - 1); // walking in reverse
         let mut whole : Field = ((self[it] as u4) as Field); // first digit is last in array
         let mut units : Field = 10;
 
@@ -74,14 +74,14 @@ impl<N> FieldConversion for [u8; N]
     }
 
     unconstrained
-    fn get_offsets(self) -> [Field; 5]
+    fn get_offsets(self) -> [u64; 5]
     {
-        let mut result : [Field; 5] = [0; 5];
+        let mut result : [u64; 5] = [0; 5];
 
-        let size : Field = self.len();
+        let size : u64 = (self.len() as u64);
         if (size != 0)
         {
-            let start : Field = ((self[0] == MINUS) as Field);
+            let start : u64 = ((self[0] == MINUS) as u64);
 
             // ensure at least one digit
             let mut valid = if (size != 1) { (self[start] - ZERO) < 10 } else { (self[0] - ZERO) < 10 };
@@ -149,11 +149,11 @@ impl<N> ByteArrayConversions for [u8; N]
     {
         let bytes : [u8] = self.parse_string();
 
-        let mut offsets : [Field; 5] = bytes.get_offsets();
+        let mut offsets : [u64; 5] = bytes.get_offsets();
 
-        let first : Field = offsets[0];
-        let second : Field = offsets[1];
-        let last : Field = offsets[4];
+        let first : u64 = offsets[0];
+        let second : u64 = offsets[1];
+        let last : u64 = offsets[4];
 
         let mut result : Option<Field> = Option::none();
 
@@ -165,7 +165,7 @@ impl<N> ByteArrayConversions for [u8; N]
 
             if (last != 0) // apply exponent
             {
-                let power : Field = bytes.get_whole(last, bytes.len());
+                let power : Field = bytes.get_whole(last, bytes.len() as u64);
 
                 let mut exponent : Field = 1;
                 for _ in 0..power { exponent *= 10; }
@@ -184,7 +184,7 @@ impl<N> ByteArrayConversions for [u8; N]
     {
         let mut bytes : [u8] = [];
 
-        let mut size : Field = self.len();
+        let mut size : u64 = (self.len() as u64);
         if (size != 0)
         {
             size -= 1;
@@ -202,7 +202,7 @@ impl<N> ByteArrayConversions for [u8; N]
     {
         let bytes : [u8] = self.parse_string();
 
-        let mut size : Field = bytes.len();
+        let mut size : u64 = (bytes.len() as u64);
         if (size == 0) | (size == 1) { [] }
         else
         {
@@ -239,7 +239,7 @@ impl<N> ByteArrayConversions for [u8; N]
     {
         let mut result : Object = Object::none();
 
-        let size : Field = self.len();
+        let size : u64 = (self.len() as u64);
         if (size != 0)
         {
             if (self[0] == QUOTATION_MARK)
@@ -266,12 +266,12 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_json(self) -> JSON
     {
-        let mut size : Field = self.len();
+        let mut size : u64 = (self.len() as u64);
         if (size == 0) { JSON::none() }
         else
         {
             let mut offset : Field = ((self[0] == QUOTATION_MARK) as Field);
-            self.parse(&mut offset, (size - offset), -1)
+            self.parse(&mut offset, (size as Field - offset), -1)
         }
     }
 }
