@@ -99,7 +99,7 @@ impl<N> ByteArrayParser for [u8; N]
 
         let mut byte_prev : u8 = 0;
 
-        let child = (index != 0);
+        let child = !((index == 0) | (self[index] == crate::globals::QUOTATION_MARK));
         let mut OK = (index != end);
         let mut value = true;
         let mut done = false;
