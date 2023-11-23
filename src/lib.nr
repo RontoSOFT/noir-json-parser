@@ -110,7 +110,7 @@ impl Extensions for JSON
         for i in 0..self.children.len()
         {
             dep::std::println(f"-- child {i} --");
-            for prop in self.children[i] { prop.print(); }
+            self.children[i].print();
         }
     }
 }
