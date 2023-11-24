@@ -16,17 +16,13 @@ use crate::globals::ZERO;
 use crate::globals::POINT;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
+use crate::globals::FIELD_true;
+use crate::globals::FIELD_null;
+use crate::globals::FIELD_false;
 
 use crate::JSON;
 use crate::Object;
 use crate::Property;
-
-global FIELD_t     : Field = 0x74;
-global FIELD_tr    : Field = 0x7472;
-global FIELD_tru   : Field = 0x747275;
-global FIELD_true  : Field = 0x74727565;
-global FIELD_null  : Field = 0x6E756C6C;
-global FIELD_false : Field = 0x66616C7365;
 
 trait PropertyLookup
 {

@@ -15,6 +15,9 @@ use crate::globals::CHAR_E;
 use crate::globals::CHAR_f;
 use crate::globals::CHAR_n;
 use crate::globals::CHAR_t;
+use crate::globals::FIELD_true;
+use crate::globals::FIELD_null;
+use crate::globals::FIELD_false;
 
 use crate::JSON;
 use crate::Object;
@@ -104,16 +107,35 @@ impl<N> ByteArrayConversions for [u8; N]
         if (size == 0) { Option::none() }
         else
         {
-            let mut byte : u8 = self[0];
+            let mut result : Option<bool> = Option::none();
 
-            if (byte == QUOTATION_MARK)
+            if (self[0] == QUOTATION_MARK)
             {
                 let json = self.parse(&mut 1, (size - 1), -1);
-                if (json.doc.len() != 0) { if (json.doc[0].value.len() != 0) { byte = json.doc[0].value[0]; } }
+                if (json.doc.len() != 0)
+                {
+                    if (json.doc[0].value.len() != 0)
+                    {
+                        let byte : u8 = json.doc[0].value[0];
+                        let OK = ((byte == CHAR_t) | (byte == CHAR_n) | (byte == CHAR_f));
+                        if (OK) { result = Option::some(byte == CHAR_t); }
+                    }
+                }
+            }
+            else
+            {
+                let mut literal_field = (self[0] as Field);
+                for i in 1..size
+                {
+                    literal_field *= 256;
+                    literal_field += (self[i] as Field);
+                }
+
+                let OK = ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false));
+                if (OK) { result = Option::some(literal_field == FIELD_true); }
             }
 
-            let OK = ((byte == CHAR_t) | (byte == CHAR_n) | (byte == CHAR_f));
-            if (OK) { Option::some(byte == CHAR_t) } else { Option::none() }
+            result
         }
     }
 
@@ -216,8 +238,8 @@ impl<N> ByteArrayConversions for str<N>
 {
     unconstrained pub fn as_bool(self) -> Option<bool>   { self.as_bytes().as_bool() }
     unconstrained pub fn as_field(self) -> Option<Field> { self.as_bytes().as_field() }
-    unconstrained pub fn as_list(self) -> [[u8]]         { self.as_bytes().as_list() }
     unconstrained pub fn as_string(self) -> [u8]         { self.as_bytes().as_slice() }
+    unconstrained pub fn as_list(self) -> [[u8]]         { self.as_bytes().as_list() }
     unconstrained pub fn as_object(self) -> JSON         { self.as_bytes().as_object() }
 }
 
@@ -236,7 +258,7 @@ impl JSON
         let size : Field = bytes.len();
         if (size == 0) { JSON::none() }
         {
-            if (bytes[0] == QUOTATION_MARK) { bytes.as_object() }
+            if (bytes[0] == QUOTATION_MARK) { bytes.parse(&mut 1, (size - 1), -1) }
             else
             {
                 let mut result : JSON = JSON::none();

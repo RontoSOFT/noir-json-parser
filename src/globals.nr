@@ -22,3 +22,7 @@ global CHAR_E : u8 = 0x45;
 global CHAR_f : u8 = 0x66;
 global CHAR_n : u8 = 0x6E;
 global CHAR_t : u8 = 0x74;
+
+global FIELD_true  : Field = 0x74727565;
+global FIELD_null  : Field = 0x6E756C6C;
+global FIELD_false : Field = 0x66616C7365;
