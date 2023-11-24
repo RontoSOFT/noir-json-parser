@@ -39,29 +39,27 @@ impl Property
     unconstrained
     fn print_index(self, index: Field)
     {
-        dep::std::println(f"key {index}");
+        dep::std::println("");
+        dep::std::print(index);
+        dep::std::print("\n{\n    key   : ");
         self.key.print();
 
-        dep::std::println("value");
-        dep::std::println("{");
+        dep::std::print("\n    value : ");
 
         let mut object = false;
         for byte in self.value
         {
             if (object & (byte != globals::END_OBJECT) & (byte != globals::BACKSLASH))
             {
-                dep::std::println(f"        {byte}");
+                dep::std::print(byte);
             }
             else
             {
-                let c = utils::chars[byte];
-                dep::std::println(f"    {c}");
-
                 object = (byte == globals::BEGIN_OBJECT);
+                dep::std::print(utils::chars[byte]);
             }
         }
-
-        dep::std::println("}");
+        dep::std::print("\n}");
     }
 }
 
@@ -98,7 +96,8 @@ impl Extensions for JSON
 
         for i in 0..self.children.len()
         {
-            dep::std::println(f"-- child {i} --");
+            dep::std::println("");
+            dep::std::print(f"-- child {i} --");
             self.children[i].print();
         }
     }
