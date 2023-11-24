@@ -10,7 +10,7 @@ global chars =
     "{","|","}","~"
 ];
 
-trait ByteArrayEqualityExtension
+trait ByteArrayComparisons
 {
     fn eq<N>(self, other : [u8; N]) -> bool;
     fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool);
@@ -23,7 +23,7 @@ trait ByteArrayExtensions
     fn print(self);
 }
 
-impl<SIZE> ByteArrayEqualityExtension for str<SIZE>
+impl<SIZE> ByteArrayComparisons for str<SIZE>
 {
     unconstrained
     pub fn eq<N>(self, other : [u8; N]) -> bool { self.as_bytes().eq(other) }
@@ -32,7 +32,7 @@ impl<SIZE> ByteArrayEqualityExtension for str<SIZE>
     pub fn less_than_or_eq<N>(self, other : [u8; N]) -> (bool, bool) { self.as_bytes().less_than_or_eq(other) }
 }
 
-impl<SIZE> ByteArrayEqualityExtension for [u8; SIZE]
+impl<SIZE> ByteArrayComparisons for [u8; SIZE]
 {
     unconstrained
     pub fn eq<N>(self, other : [u8; N]) -> bool
