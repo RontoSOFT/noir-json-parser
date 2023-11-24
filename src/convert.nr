@@ -18,7 +18,6 @@ use crate::globals::CHAR_t;
 
 use crate::JSON;
 use crate::Object;
-use crate::Property;
 
 trait FieldConversion
 {
@@ -32,26 +31,8 @@ trait ByteArrayConversions
     fn as_field(self) -> Option<Field>;
     fn as_string(self) -> [u8];
     fn as_list(self) -> [[u8]];
-    fn as_object(self, parent : JSON) -> Object;
+    fn as_object(self, parent : JSON) -> JSON;
     fn as_json(self) -> JSON;
-}
-
-trait PropertyLookup
-{
-    fn get<N> (self, key : str<N>) -> [u8];
-
-    fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8];
-    fn binary_search<N>(self, key : [u8; N], left : Field, right : Field) -> [u8];
-}
-
-trait PropertyConversions
-{
-    fn get<N>       (self, key : str<N>) -> [u8]          { self.doc.get(key) }
-    fn get_bool<N>  (self, key : str<N>) -> Option<bool>  { self.doc.get(key).as_bool() }
-    fn get_field<N> (self, key : str<N>) -> Option<Field> { self.doc.get(key).as_field() }
-    fn get_string<N>(self, key : str<N>) -> [u8]          { self.doc.get(key).as_string() }
-    fn get_array<N> (self, key : str<N>) -> [[u8]]        { self.doc.get(key).as_list() }
-    fn get_object<N>(self, key : str<N>) -> Object        { self.doc.get(key).as_object(self) }
 }
 
 impl<N> FieldConversion for [u8; N]
@@ -133,7 +114,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_bool(self) -> Option<bool>
     {
-        let bytes : [u8] = self.parse_string();
+        let bytes : [u8] = self.parse_value();
 
         if (bytes.len() == 0) { Option::none() }
         else
@@ -147,7 +128,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_field(self) -> Option<Field>
     {
-        let bytes : [u8] = self.parse_string();
+        let bytes : [u8] = self.parse_value();
 
         let mut offsets : [Field; 5] = bytes.get_offsets();
 
@@ -200,7 +181,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_list(self) -> [[u8]]
     {
-        let bytes : [u8] = self.parse_string();
+        let bytes : [u8] = self.parse_value();
 
         let mut size : Field = bytes.len();
         if (size == 0) | (size == 1) { [] }
@@ -235,17 +216,16 @@ impl<N> ByteArrayConversions for [u8; N]
     }
 
     unconstrained
-    pub fn as_object(self, parent : JSON) -> Object
+    pub fn as_object(self, parent : JSON) -> JSON
     {
-        let mut result : Object = Object::none();
+        let mut result : JSON = JSON::none();
 
         let size : Field = self.len();
         if (size != 0)
         {
             if (self[0] == QUOTATION_MARK)
             {
-                let json = self.parse(&mut 1, (self.len() - 1), -1);
-                if (!json.is_none()) { result.doc = json.doc; }
+                result = self.parse(&mut 1, (self.len() - 1), -1);
             }
             else
             {
@@ -254,7 +234,7 @@ impl<N> ByteArrayConversions for [u8; N]
                 if (OK & (size == 3))
                 {
                     let index : u8 = self[1];
-                    if (index < (parent.children.len() as u8)) { result = Object { parent, doc: parent.children[index] }; }
+                    if (index < (parent.children.len() as u8)) { result = parent.child(index); }
                 }
                 else if (OK & (size != 1)) { result.doc = [crate::Property::none()]; }
             }
@@ -279,58 +259,38 @@ impl<N> ByteArrayConversions for [u8; N]
 impl<N> ByteArrayConversions for str<N>
 {
     unconstrained
-    pub fn as_bool(string : Self) -> Option<bool> { string.as_bytes().as_bool() }
+    pub fn as_bool(self) -> Option<bool> { self.as_bytes().as_bool() }
 
     unconstrained
-    pub fn as_field(string : Self) -> Option<Field> { string.as_bytes().as_field() }
+    pub fn as_field(self) -> Option<Field> { self.as_bytes().as_field() }
 
     unconstrained
-    pub fn as_list(string : Self) -> [[u8]] { string.as_bytes().as_list() }
+    pub fn as_list(self) -> [[u8]] { self.as_bytes().as_list() }
 
     unconstrained
-    pub fn as_string(string : Self) -> [u8] { string.as_bytes().as_string() }
+    pub fn as_string(self) -> [u8] { self.as_bytes().as_slice() }
 
     unconstrained
-    pub fn as_object(string : Self, parent : JSON) -> Object { string.as_bytes().as_object(parent) }
+    pub fn as_object(self, parent : JSON) -> JSON { self.as_bytes().as_object(parent) }
 
     unconstrained
-    pub fn as_json(string : Self) -> JSON { string.as_bytes().as_json() }
+    pub fn as_json(self) -> JSON { self.as_bytes().as_json() }
 }
 
-impl PropertyLookup for [Property]
+impl JSON
 {
     unconstrained
-    pub fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), (self.len() - 1)) }
-    // pub fn get<N> (self, key : str<N>) -> [u8] { self.binary_search(key.as_bytes(), 0, (self.len() - 1)) }
+    pub fn get_bool<N>  (self, key : str<N>) -> Option<bool>  { self.doc.get(key).as_bool() }
 
     unconstrained
-    pub fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8]
-    {
-        if      (index == -1)             { [] }
-        else if (key.eq(self[index].key)) { self[index].value }
-        else                              { self.linear_search(key, (index - 1)) }
-    }
+    pub fn get_field<N> (self, key : str<N>) -> Option<Field> { self.doc.get(key).as_field() }
 
     unconstrained
-    pub fn binary_search<N>(self, key : [u8; N], left : Field, right : Field) -> [u8]
-    {
-        if (left == (right + 1)) { [] }
-        else
-        {
-            let middle : Field = ((((left + right) as u64) / 2) as Field);
-            let (less_than, equal) = key.less_than_or_eq(self[middle].key);
+    pub fn get_string<N>(self, key : str<N>) -> [u8]          { self.doc.get(key).as_string() }
 
-            if      (equal)     { self[middle].value }
-            else if (less_than) { self.binary_search(key, left, (middle - 1)) }
-            else                { self.binary_search(key, (middle + 1), right) }
-        }
-    }
+    unconstrained
+    pub fn get_array<N> (self, key : str<N>) -> [[u8]]        { self.doc.get(key).as_list() }
+
+    unconstrained
+    pub fn get_object<N>(self, key : str<N>) -> JSON          { self.doc.get(key).as_object(self) }
 }
-
-impl PropertyConversions for Object
-{
-    unconstrained
-    pub fn get_object<N>(self, key : str<N>) -> Object { self.doc.get(key).as_object(self.parent) }
-}
-
-impl PropertyConversions for JSON { }

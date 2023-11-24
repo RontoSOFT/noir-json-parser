@@ -1,6 +1,3 @@
-use crate::JSON;
-use crate::Property;
-
 use crate::globals::BEGIN_ARRAY;
 use crate::globals::END_ARRAY;
 use crate::globals::BEGIN_OBJECT;
@@ -20,6 +17,10 @@ use crate::globals::POINT;
 use crate::globals::CHAR_e;
 use crate::globals::CHAR_E;
 
+use crate::JSON;
+use crate::Object;
+use crate::Property;
+
 global FIELD_t     : Field = 0x74;
 global FIELD_tr    : Field = 0x7472;
 global FIELD_tru   : Field = 0x747275;
@@ -27,15 +28,29 @@ global FIELD_true  : Field = 0x74727565;
 global FIELD_null  : Field = 0x6E756C6C;
 global FIELD_false : Field = 0x66616C7365;
 
+trait PropertyLookup
+{
+    fn get<N> (self, key : str<N>) -> [u8];
+
+    fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8];
+    fn binary_search<N>(self, key : [u8; N], begin : Field, end : Field) -> [u8];
+}
+
+trait ByteArrayParser
+{
+    fn parse_value(self) -> [u8];
+    fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
+}
+
 impl JSON
 {
     unconstrained
     pub fn parse<SIZE>(string : str<SIZE>) -> Self { string.as_bytes().parse(&mut 0, SIZE, -1) }
 
     unconstrained
-    fn store(self, prop : Property) -> [Property]
+    fn store(self, prop : Property) -> Object
     {
-        let mut copy : [Property] = [];
+        let mut copy : Object = [];
 
         // linear insert
         for current in self.doc { if (!prop.key.eq(current.key)) { copy = copy.push_back(current); } }
@@ -60,18 +75,45 @@ impl JSON
         // }
         // if (inserted) { copy } else { copy.push_back(prop) }
     }
+
+    unconstrained
+    pub fn get<N> (self, key : str<N>) -> [u8] { self.doc.get(key) }
 }
 
-trait ByteArrayParser
+impl PropertyLookup for Object
 {
-    fn parse_string(self) -> [u8];
-    fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
+    unconstrained
+    pub fn get<N> (self, key : str<N>) -> [u8] { self.linear_search(key.as_bytes(), (self.len() - 1)) }
+    // pub fn get<N> (self, key : str<N>) -> [u8] { self.binary_search(key.as_bytes(), 0, (self.len() - 1)) }
+
+    unconstrained
+    pub fn linear_search<N>(self, key : [u8; N], index : Field) -> [u8]
+    {
+        if      (index == -1)             { [] }
+        else if (key.eq(self[index].key)) { self[index].value }
+        else                              { self.linear_search(key, (index - 1)) }
+    }
+
+    unconstrained
+    pub fn binary_search<N>(self, key : [u8; N], begin : Field, end : Field) -> [u8]
+    {
+        if (begin == (end + 1)) { [] }
+        else
+        {
+            let middle : Field = ((((begin + end) as u64) / 2) as Field);
+            let (less_than, equal) = key.less_than_or_eq(self[middle].key);
+
+            if      (equal)     { self[middle].value }
+            else if (less_than) { self.binary_search(key, begin, (middle - 1)) }
+            else                { self.binary_search(key, (middle + 1), end) }
+        }
+    }
 }
 
 impl<N> ByteArrayParser for [u8; N]
 {
     unconstrained
-    fn parse_string(self) -> [u8]
+    pub fn parse_value(self) -> [u8]
     {
         let mut bytes : [u8] = self.as_slice();
 
@@ -80,7 +122,7 @@ impl<N> ByteArrayParser for [u8; N]
             if (self[0] == QUOTATION_MARK)
             {
                 let json = self.parse(&mut 1, (self.len() - 1), -1);
-                if (!json.is_none()) { bytes = json.doc[0].value; }
+                if (json.doc.len() == 1) { bytes = json.doc[0].value; }
             }
         }
 

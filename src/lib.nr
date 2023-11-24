@@ -9,24 +9,20 @@ struct Property
     value : [u8],
 }
 
-struct Object
-{
-    parent : JSON
-,   doc : [Property]
-}
+type Object = [Property];
 
 struct JSON
 {
-    doc : [Property]
-,   children : [[Property]]
+    doc : Object
+,   children : [Object]
 }
 
 trait Extensions
 {
     fn none() -> Self;
-    fn len(self) -> Field { self.doc.len() }
-    fn is_none(self) -> bool { self.doc.len() == 0 }
-    fn is_empty(self) -> bool { self.doc.is_empty() }
+    fn len(self) -> Field;
+    fn is_none(self) -> bool;
+    fn is_empty(self) -> bool;
     fn print(self);
 }
 
@@ -70,7 +66,7 @@ impl Property
     }
 }
 
-impl Extensions for [Property]
+impl Extensions for Object
 {
     unconstrained
     fn none() -> Self { [] }
@@ -88,19 +84,19 @@ impl Extensions for [Property]
     pub fn print(self) { for i in 0..self.len() { self[i].print_index(i); } }
 }
 
-impl Extensions for Object
-{
-    unconstrained
-    fn none() -> Self { Self { parent: dep::std::unsafe::zeroed(), doc : [] } }
-
-    unconstrained
-    pub fn print(self) { self.doc.print(); }
-}
-
 impl Extensions for JSON
 {
     unconstrained
     fn none() -> Self { Self { doc: [], children : [] } }
+
+    unconstrained
+    pub fn is_none(self) -> bool { self.doc.len() == 0 }
+
+    unconstrained
+    pub fn len(self) -> Field { self.doc.len() }
+
+    unconstrained
+    pub fn is_empty(self) -> bool { self.doc.is_empty() }
 
     unconstrained
     pub fn print(self)
@@ -118,5 +114,5 @@ impl Extensions for JSON
 impl JSON
 {
     unconstrained
-    pub fn child(self, index : u8) -> Object { Object { parent: self, doc: self.children[index] } }
+    pub fn child(self, index : u8) -> JSON { JSON { doc: self.children[index], children: self.children } }
 }
