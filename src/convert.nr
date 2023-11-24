@@ -56,55 +56,41 @@ impl<N> FieldConversion for [u8; N]
     unconstrained
     fn get_offsets(self) -> [Field; 5]
     {
-        let mut result : [Field; 5] = [0; 5];
-
         let size : Field = self.len();
-        if (size != 0)
+        if (size == 0) { [0; 5] }
+        else
         {
             let start : Field = ((self[0] == MINUS) as Field);
-
-            // ensure at least one digit
-            let mut valid = if (size != 1) { (self[start] - ZERO) < 10 } else { (self[0] - ZERO) < 10 };
-
-            if (valid)
+            let mut result : [Field; 5] = [start, size, 0, 0, 0];
+            let mut decimal_point : Field = 0;
+            for i in start..size
             {
-                result[0] = start;
-                result[1] = size;
-
-                let mut decimal_point = false;
-                for i in start..size
+                if (result[0] != result[1])
                 {
-                    if (valid)
+                    let byte = self[i];
+
+                    if (byte == POINT)
                     {
-                        let byte = self[i];
+                        result[1] = i;       // end of whole bytes
+                        result[2] = (i + 1); // start of fraction bytes
 
-                        if (byte == POINT)
-                        {
-                            result[1] = i;       // end of whole bytes
-                            result[2] = (i + 1); // start of fraction bytes
-
-                            decimal_point = true;
-                        }
-                        else if ((byte == CHAR_e) | (byte == CHAR_E))
-                        {
-                            if (decimal_point) { result[3] = i; } // end of fraction bytes
-                            else               { result[1] = i; } // end of whole bytes
-
-                            result[4] = (i + 1); // start of exponent bytes
-                        }
-                        else if ((byte == MINUS) | (byte == PLUS))
-                        {
-                            result[4] = (i + 1); // start of exponent bytes
-                        }
-                        else { valid = ((byte - ZERO) < 10); }
+                        decimal_point = 1;
                     }
+                    else if ((byte == CHAR_e) | (byte == CHAR_E))
+                    {
+                        result[1 + (decimal_point * 2)] = i; // 1 - end of whole bytes, 3 - end of fraction bytes
+                        result[4] = (i + 1); // start of exponent bytes
+                    }
+                    else if ((byte == MINUS) | (byte == PLUS))
+                    {
+                        result[4] = (i + 1); // start of exponent bytes
+                    }
+                    else if ((byte - ZERO) > 9) { result = [0; 5]; }
                 }
-
-                if (!valid) { result = [0; 5]; }
             }
-        }
 
-        result
+            result
+        }
     }
 }
 
