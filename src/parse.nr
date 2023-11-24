@@ -38,7 +38,7 @@ trait PropertyLookup
 
 trait ByteArrayParser
 {
-    fn parse_value(self) -> [u8];
+    fn parse_list(self) -> [[u8]];
     fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
@@ -77,6 +77,9 @@ impl JSON
     }
 
     unconstrained
+    pub fn len(self) -> Field { self.doc.len() }
+
+    unconstrained
     pub fn get<N> (self, key : str<N>) -> [u8] { self.doc.get(key) }
 }
 
@@ -113,20 +116,39 @@ impl PropertyLookup for Object
 impl<N> ByteArrayParser for [u8; N]
 {
     unconstrained
-    pub fn parse_value(self) -> [u8]
+    fn parse_list(self) -> [[u8]]
     {
-        let mut bytes : [u8] = self.as_slice();
-
-        if (self.len() != 0)
+        let mut size : Field = self.len();
+        if (size == 0) | (size == 1) { [] }
+        else
         {
-            if (self[0] == QUOTATION_MARK)
+            size -= 1;
+            if ((self[0] == BEGIN_ARRAY) & (self[size] == END_ARRAY))
             {
-                let json = self.parse(&mut 1, (self.len() - 1), -1);
-                if (json.doc.len() == 1) { bytes = json.doc[0].value; }
-            }
-        }
+                let mut result : [[u8]] = [];
 
-        bytes
+                let mut value : [u8] = [];
+                let mut objects : Field = 0;
+                let mut arrays : Field = 0;
+                for i in 1..size
+                {
+                    let byte = self[i];
+
+                    arrays  += (((byte == BEGIN_ARRAY) as Field)  - ((byte == END_ARRAY) as Field));
+                    objects += (((byte == BEGIN_OBJECT) as Field) - ((byte == END_OBJECT) as Field));
+
+                    if ((byte == VALUE_DELIMITER) & (arrays == 0) & (objects == 0))
+                    {
+                        result = result.push_back(value);
+                        value = [];
+                    }
+                    else { value = value.push_back(byte); }
+                }
+
+                result.push_back(value)
+            }
+            else { [] }
+        }
     }
 
     unconstrained

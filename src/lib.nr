@@ -5,8 +5,8 @@ mod utils;
 
 struct Property
 {
-    key : [u8],
-    value : [u8],
+    key : [u8]
+,   value : [u8]
 }
 
 type Object = [Property];
@@ -20,7 +20,6 @@ struct JSON
 trait Extensions
 {
     fn none() -> Self;
-    fn len(self) -> Field;
     fn is_none(self) -> bool;
     fn is_empty(self) -> bool;
     fn print(self);
@@ -75,9 +74,6 @@ impl Extensions for Object
     pub fn is_none(self) -> bool { self.len() == 0 }
 
     unconstrained
-    pub fn len(self) -> Field { self.len() }
-
-    unconstrained
     pub fn is_empty(self) -> bool { if (self.len() == 1) { self[0].is_none() } else { false } }
 
     unconstrained
@@ -91,9 +87,6 @@ impl Extensions for JSON
 
     unconstrained
     pub fn is_none(self) -> bool { self.doc.len() == 0 }
-
-    unconstrained
-    pub fn len(self) -> Field { self.doc.len() }
 
     unconstrained
     pub fn is_empty(self) -> bool { self.doc.is_empty() }
