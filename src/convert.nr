@@ -256,23 +256,21 @@ impl JSON
         let bytes = self.doc.get(key);
 
         let size : Field = bytes.len();
-        if (size == 0) { JSON::none() }
+        if      (size == 0)                  { JSON::none() }
+        else if (bytes[0] == QUOTATION_MARK) { bytes.parse(&mut 1, (size - 1), -1) }
+        else
         {
-            if (bytes[0] == QUOTATION_MARK) { bytes.parse(&mut 1, (size - 1), -1) }
-            else
+            let mut result : JSON = JSON::none();
+
+            let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
+            if (OK & (size == 3))
             {
-                let mut result : JSON = JSON::none();
-
-                let OK = ((bytes[0] == BEGIN_OBJECT) & (bytes[size - 1] == END_OBJECT));
-                if (OK & (size == 3))
-                {
-                    let index : u8 = bytes[1];
-                    if (index < (self.children.len() as u8)) { result = self.child(index); }
-                }
-                else if (OK & (size != 1)) { result.doc = [crate::Property::none()]; }
-
-                result
+                let index : u8 = bytes[1];
+                if (index < (self.children.len() as u8)) { result = self.child(index); }
             }
+            else if (OK & (size != 1)) { result.doc = [crate::Property::none()]; }
+
+            result
         }
     }
 }

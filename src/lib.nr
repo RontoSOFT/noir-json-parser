@@ -42,8 +42,7 @@ impl Property
         dep::std::println(f"key {index}");
         self.key.print();
 
-        dep::std::println("value");
-        dep::std::println("{");
+        dep::std::println("value\n{");
 
         let mut object = false;
         for byte in self.value
