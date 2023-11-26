@@ -36,6 +36,7 @@ trait ByteArrayParser
 {
     fn parse_list(self) -> [[u8]];
     fn eat_whitespace(self, index : Field, end : Field) -> Field;
+    fn eat_literal(self, result : [u8], index : Field, end: Field, literal_field : Field) -> ([u8], Field, Field);
     fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
@@ -155,13 +156,26 @@ impl<N> ByteArrayParser for [u8; N]
     }
 
     unconstrained
+    fn eat_literal(self, result : [u8], index : Field, end: Field, literal_field : Field) -> ([u8], Field, Field)
+    {
+        if (index == end) { (result, index, literal_field) }
+        else
+        {
+            let byte = self[index];
+            let OK = (byte == 0x61) | (byte == 0x6C) | ((byte - 0x65) < 2) | ((byte - 0x72) < 4);
+
+            if (OK) { self.eat_literal(result.push_back(byte), (index + 1), end, ((literal_field * 256) + (byte as Field))) }
+            else    { (result, index, literal_field) }
+        }
+    }
+
+    unconstrained
     fn parse(self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
     {
         let mut json = JSON::none();
         let mut prop = Property::none();
 
         let mut arrays : Field = 0;
-        let mut literal_field : Field = 0;
         let mut index : Field = *begin;
 
         let mut byte_prev : u8 = 0;
@@ -178,7 +192,6 @@ impl<N> ByteArrayParser for [u8; N]
         let mut array = false;
         let mut string = false;
         let mut number = false;
-        let mut literal = false;
         let mut array_value = false;
         let mut minus = false;
         let mut digit_0 = false;
@@ -275,7 +288,7 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else if (byte == QUOTATION_MARK)
                 {
-                    OK = (array | !(number | literal));
+                    OK = (array | !number);
 
                     string = true;
                     escaped = (byte_prev == BACKSLASH);
@@ -310,9 +323,7 @@ impl<N> ByteArrayParser for [u8; N]
                     {
                         prop.value = prop.value.push_back(byte);
 
-                        literal_field = 0;
                         number = false;
-                        literal = false;
                         minus = false;
                         digit_0 = false;
                         digit_1_9 = false;
@@ -331,7 +342,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                     if ((byte - ZERO) < 10)
                     {
-                        OK  = (value & !(literal | digit_0) | (digit_0 & (fraction | e_E)));
+                        OK  = (value & (!digit_0 | (digit_0 & (fraction | e_E))));
                         OK &= (!object | has_key);
 
                         number = true;
@@ -345,7 +356,7 @@ impl<N> ByteArrayParser for [u8; N]
                         OK = (number & !(fraction | e_E));
                         fraction = true;
                     }
-                    else if (((byte == CHAR_e) | (byte == CHAR_E)) & !literal)
+                    else if ((byte == CHAR_e) | (byte == CHAR_E))
                     {
                         OK = (number & !e_E);
                         e_E = true;
@@ -365,27 +376,24 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else
                     {
-                        OK = !number;
+                        let (result, index_, literal_field) = self.eat_literal(prop.value, index, end, (byte as Field));
+                        index = index_;
+                        prop.value = result;
 
-                        literal = true;
-
-                        literal_field *= 256;
-                        literal_field += (byte as Field);
+                        OK = (!number & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)));
                     }
                 }
                 else
                 {
                     OK = (byte != 0x00) | ((byte == 0x00) & (!(object | array) & (index == end)));
-                    done = ((number | literal) & !(array | (byte == BACKSLASH)));
+                    done = (number & !array);
 
                     // if (OK & !done) { index = self.eat_whitespace(index, end); }
                 }
 
                 if (done)
                 {
-                    OK  = !(number | literal)
-                        | ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
-                        | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false));
+                    OK = (!number | (digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit));
 
                     if (OK & value)
                     {
@@ -393,11 +401,9 @@ impl<N> ByteArrayParser for [u8; N]
                         prop = Property::none();
                     }
 
-                    literal_field = 0;
                     done = false;
                     value = false;
                     number = false;
-                    literal = false;
                     minus = false;
                     digit_0 = false;
                     digit_1_9 = false;
@@ -417,9 +423,7 @@ impl<N> ByteArrayParser for [u8; N]
         {
             if (json.is_none())
             {
-                OK  = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
-                    | (!number & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)))
-                    | !value;
+                OK = (!(number & value) | ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)));
 
                 if (OK) { json.doc = [prop]; }
             }
