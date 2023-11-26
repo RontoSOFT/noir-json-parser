@@ -224,8 +224,6 @@ impl<N> ByteArrayParser for [u8; N]
                         OK = (child_json.doc.len() != 0);
                         if (OK)
                         {
-                            if ((prop.value.len() as u64) > 2) { OK = value_delimiter; }
-
                             prop.value = prop.value.push_back(BEGIN_OBJECT);
                             prop.value = prop.value.push_back(child_index as u8);
                             prop.value = prop.value.push_back(END_OBJECT);
@@ -258,8 +256,6 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else
                     {
-                        OK &= (object & ((prop.key.len() != 0) == (prop.value.len() != 0)));
-
                         object = false;
                         done = OK;
 
@@ -323,6 +319,9 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else if ((byte > SPACE) & (byte != BACKSLASH))
                 {
+                    prop.value = prop.value.push_back(byte);
+                    array_value = true;
+
                     if ((byte - ZERO) < 10)
                     {
                         OK  = (value & !(literal | digit_0) | (digit_0 & (fraction | e_E)));
@@ -366,9 +365,6 @@ impl<N> ByteArrayParser for [u8; N]
                         literal_field *= 256;
                         literal_field += (byte as Field);
                     }
-
-                    prop.value = prop.value.push_back(byte);
-                    array_value = true;
                 }
                 else
                 {
@@ -378,7 +374,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                 if (done)
                 {
-                    OK = !(number | literal)
+                    OK  = !(number | literal)
                         | ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
                         | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false));
 
@@ -412,7 +408,7 @@ impl<N> ByteArrayParser for [u8; N]
         {
             if (json.is_none())
             {
-                OK =  (((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit)))
+                OK  = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
                     | (!number & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)))
                     | !value;
 
