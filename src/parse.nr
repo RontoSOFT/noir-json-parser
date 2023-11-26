@@ -35,6 +35,7 @@ trait PropertyLookup
 trait ByteArrayParser
 {
     fn parse_list(self) -> [[u8]];
+    fn eat_whitespace(self, index : Field, end : Field) -> Field;
     fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
@@ -145,6 +146,12 @@ impl<N> ByteArrayParser for [u8; N]
             }
             else { [] }
         }
+    }
+
+    unconstrained
+    fn eat_whitespace(self, index : Field, end : Field) -> Field
+    {
+        if ((index == end) | (self[index] > SPACE)) { index } else { self.eat_whitespace((index + 1), end) }
     }
 
     unconstrained
@@ -370,6 +377,8 @@ impl<N> ByteArrayParser for [u8; N]
                 {
                     OK = (byte != 0x00) | ((byte == 0x00) & (!(object | array) & (index == end)));
                     done = ((number | literal) & !(array | (byte == BACKSLASH)));
+
+                    // if (OK & !done) { index = self.eat_whitespace(index, end); }
                 }
 
                 if (done)
