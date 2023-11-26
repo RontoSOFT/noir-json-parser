@@ -37,6 +37,7 @@ trait ByteArrayParser
     fn parse_list(self) -> [[u8]];
     fn eat_whitespace(self, index : Field, end : Field) -> Field;
     fn eat_literal(self, result : [u8], index : Field, end: Field, literal_field : Field) -> ([u8], Field, Field);
+    fn eat_string(self, result : [u8], index : Field, end: Field, backslash: bool, plain: bool) -> ([u8], Field);
     fn parse(self, begin : &mut Field, end : Field, child_index : Field) -> JSON;
 }
 
@@ -170,6 +171,24 @@ impl<N> ByteArrayParser for [u8; N]
     }
 
     unconstrained
+    fn eat_string(self, mut result: [u8], index : Field, end: Field, backslash: bool, plain: bool) -> ([u8], Field)
+    {
+        if (index == end) { (result, index) }
+        else
+        {
+            let byte = self[index];
+            let quote = (byte == QUOTATION_MARK);
+
+            if (!quote | (quote & backslash & plain))
+            {
+                if ((byte != BACKSLASH) | plain) { result = result.push_back(byte); }
+                self.eat_string(result, (index + 1), end, (byte == BACKSLASH), plain)
+            }
+            else { (result, (index + 1)) }
+        }
+    }
+
+    unconstrained
     fn parse(self, mut begin : &mut Field, end : Field, child_index : Field) -> JSON
     {
         let mut json = JSON::none();
@@ -190,7 +209,6 @@ impl<N> ByteArrayParser for [u8; N]
         let mut value_delimiter = false;
         let mut object = false;
         let mut array = false;
-        let mut string = false;
         let mut number = false;
         let mut array_value = false;
         let mut minus = false;
@@ -210,17 +228,7 @@ impl<N> ByteArrayParser for [u8; N]
                 let byte = self[index];
                 index += 1;
 
-                if (string)
-                {
-                    string  = (byte != QUOTATION_MARK);
-                    string |= ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH) & !escaped);
-
-                    let safe = !((byte == BACKSLASH) & escaped);
-                    if      (safe & value)  { prop.value = prop.value.push_back(byte); done = !(string | array); }
-                    else if (safe & string) { prop.key = prop.key.push_back(byte); has_key = true; }
-                    else if (safe)          { OK = (object & has_key); }
-                }
-                else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
+                if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
                 {
                     OK = value;
 
@@ -290,15 +298,24 @@ impl<N> ByteArrayParser for [u8; N]
                 {
                     OK = (array | !number);
 
-                    string = true;
-                    escaped = (byte_prev == BACKSLASH);
-
+                    let plain = (self[index - 1 - ((index != 1) as Field)] != BACKSLASH);
                     if (value)
                     {
-                        OK &= (!array_value | (array_value & value_delimiter));
+                        let (result, index_) = self.eat_string(prop.value.push_back(QUOTATION_MARK), index, end, false, plain);
+                        prop.value = result.push_back(QUOTATION_MARK);
+                        index = index_;
 
-                        prop.value = prop.value.push_back(byte);
                         array_value = true;
+                        done = !array;
+                    }
+                    else
+                    {
+                        let (result, index_) = self.eat_string([], index, end, false, plain);
+                        prop.key = result;
+                        index = index_;
+
+                        has_key = (prop.key.len() != 0);
+                        OK &= (object & has_key);
                     }
                 }
                 else if (byte == KEY_DELIMITER)
@@ -419,7 +436,7 @@ impl<N> ByteArrayParser for [u8; N]
             }
         }
 
-        if (OK & !(object | array | string))
+        if (OK & !(object | array))
         {
             if (json.is_none())
             {
