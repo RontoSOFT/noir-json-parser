@@ -194,19 +194,19 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_string(self) -> [u8]
     {
-        let mut bytes : [u8] = [];
-
         let mut size : Field = self.len();
-        if (size != 0)
+        if (size == 0) { [] }
+        else
         {
             size -= 1;
+
+            let mut bytes : [u8] = [];
             if (self[0] == QUOTATION_MARK) & (self[size] == QUOTATION_MARK)
             {
                 for i in 1..size { bytes = bytes.push_back(self[i]); }
             }
+            bytes
         }
-
-        bytes
     }
 
     unconstrained
@@ -235,7 +235,7 @@ impl<N> ByteArrayConversions for str<N>
 {
     unconstrained pub fn as_bool(self) -> Option<bool>   { self.as_bytes().as_bool() }
     unconstrained pub fn as_field(self) -> Option<Field> { self.as_bytes().as_field() }
-    unconstrained pub fn as_string(self) -> [u8]         { self.as_bytes().as_slice() }
+    unconstrained pub fn as_string(self) -> [u8]         { self.as_bytes().as_string() }
     unconstrained pub fn as_list(self) -> [[u8]]         { self.as_bytes().as_list() }
     unconstrained pub fn as_json(self) -> JSON           { self.as_bytes().as_json() }
 }
