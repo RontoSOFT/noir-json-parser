@@ -34,7 +34,7 @@ trait ByteArrayConversions
     fn as_field(self) -> Option<Field>;
     fn as_string(self) -> [u8];
     fn as_list(self) -> [[u8]];
-    fn as_object(self) -> JSON;
+    fn as_json(self) -> JSON;
 }
 
 impl<N> FieldConversion for [u8; N]
@@ -217,21 +217,17 @@ impl<N> ByteArrayConversions for [u8; N]
         else if (self[0] == QUOTATION_MARK)
         {
             let json = self.parse(&mut 1, (size - 1), -1);
-            if (json.doc.len() != 0) { json.doc[0].value.parse_list() } else { [] }
+            if (json.doc.len() == 0) { [] } else { json.doc[0].value.parse_list() }
         }
         else { self.parse_list() }
     }
 
     unconstrained
-    pub fn as_object(self) -> JSON
+    pub fn as_json(self) -> JSON
     {
         let size : Field = self.len();
-        if (size == 0) { JSON::none() }
-        else
-        {
-            let mut offset : Field = ((self[0] == QUOTATION_MARK) as Field);
-            self.parse(&mut offset, (size - offset), -1)
-        }
+        let mut offset : Field = if (size == 0) { 0 } else { (self[0] == QUOTATION_MARK) as Field };
+        self.parse(&mut offset, (size - offset), -1)
     }
 }
 
@@ -241,7 +237,7 @@ impl<N> ByteArrayConversions for str<N>
     unconstrained pub fn as_field(self) -> Option<Field> { self.as_bytes().as_field() }
     unconstrained pub fn as_string(self) -> [u8]         { self.as_bytes().as_slice() }
     unconstrained pub fn as_list(self) -> [[u8]]         { self.as_bytes().as_list() }
-    unconstrained pub fn as_object(self) -> JSON         { self.as_bytes().as_object() }
+    unconstrained pub fn as_json(self) -> JSON           { self.as_bytes().as_json() }
 }
 
 impl JSON
