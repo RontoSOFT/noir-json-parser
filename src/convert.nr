@@ -65,7 +65,7 @@ impl<N> FieldConversion for [u8; N]
         {
             let start : Field = ((self[0] == MINUS) as Field);
             let mut result : [Field; 5] = [start, size, 0, 0, 0];
-            let mut decimal_point : Field = 0;
+            let mut decimal_point : Field = 1;
             for i in start..size
             {
                 if (result[0] != result[1])
@@ -77,11 +77,11 @@ impl<N> FieldConversion for [u8; N]
                         result[1] = i;       // end of whole bytes
                         result[2] = (i + 1); // start of fraction bytes
 
-                        decimal_point = 1;
+                        decimal_point = 3;
                     }
                     else if ((byte == CHAR_e) | (byte == CHAR_E))
                     {
-                        result[1 + (decimal_point * 2)] = i; // 1 - end of whole bytes, 3 - end of fraction bytes
+                        result[decimal_point] = i; // 1 - end of whole bytes, 3 - end of fraction bytes
                         result[4] = (i + 1); // start of exponent bytes
                     }
                     else if ((byte == MINUS) | (byte == PLUS))
@@ -102,8 +102,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_bool(self) -> Option<bool>
     {
-        let size = self.len();
-
+        let size : Field = self.len();
         if (size == 0) { Option::none() }
         else
         {
@@ -142,28 +141,31 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_field(self) -> Option<Field>
     {
-        let size = self.len();
-
-        let mut offset = 0;
         let mut offsets : [Field; 5] = [0; 5];
+        let mut offset : Field = 0;
 
+        let mut size : Field = self.len();
         if (size != 0)
         {
             if (self[0] == QUOTATION_MARK)
             {
-                let json = self.parse(&mut 1, (size - 1), -1);
+                size -= 1;
+                let json = self.parse(&mut 1, size, -1);
                 if (json.doc.len() != 0)
                 {
                     offsets = json.doc[0].value.get_offsets();
                     offset = 1;
+                    offsets[0] += 1;
+                    offsets[1] += 1;
+                    offsets[4] += 1;
                 }
             }
             else { offsets = self.get_offsets(); }
         }
 
-        let first : Field = offsets[0] + offset;
-        let second : Field = offsets[1] + offset;
-        let last : Field = offsets[4] + offset;
+        let first : Field = offsets[0];
+        let second : Field = offsets[1];
+        let last : Field = offsets[4];
 
         let mut result : Option<Field> = Option::none();
 
@@ -175,7 +177,7 @@ impl<N> ByteArrayConversions for [u8; N]
 
             if (last != offset) // apply exponent
             {
-                let power : Field = self.get_whole(last, size - offset);
+                let power : Field = self.get_whole(last, size);
 
                 let mut exponent : Field = 1;
                 for _ in 0..power { exponent *= 10; }
@@ -210,8 +212,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_list(self) -> [[u8]]
     {
-        let size = self.len();
-
+        let size : Field = self.len();
         if      (size == 0) { [] }
         else if (self[0] == QUOTATION_MARK)
         {
@@ -224,7 +225,7 @@ impl<N> ByteArrayConversions for [u8; N]
     unconstrained
     pub fn as_object(self) -> JSON
     {
-        let mut size : Field = self.len();
+        let size : Field = self.len();
         if (size == 0) { JSON::none() }
         else
         {
