@@ -212,6 +212,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                         arrays += 1;
                         array = true;
+                        value_delimiter = false;
                     }
                     else if (object | array)
                     {
@@ -237,8 +238,9 @@ impl<N> ByteArrayParser for [u8; N]
                     else
                     {
                         object = true;
-                        value = false;
                         has_key = false;
+                        value = false;
+                        value_delimiter = false;
                     }
                 }
                 else if ((byte == END_OBJECT) | (byte == END_ARRAY))
@@ -291,7 +293,7 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else if (byte == VALUE_DELIMITER)
                 {
-                    OK = ((object | array) & array_value);
+                    OK = (((object | array) & array_value) | (object & !array));
 
                     key_delimiter = false;
                     value_delimiter = true;
