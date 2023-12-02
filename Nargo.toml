@@ -2,4 +2,4 @@
 name = "noir_json_parser"
 authors = ["grasshopper47","consentsam"]
 type = "lib"
-compiler_version = "0.19.2"
+compiler_version = "0.20.0"
