@@ -4,7 +4,7 @@ global BEGIN_OBJECT    : u8 = 0x7B; // { left curly bracket
 global END_OBJECT      : u8 = 0x7D; // } right curly bracket
 global KEY_DELIMITER   : u8 = 0x3A; // : colon
 global VALUE_DELIMITER : u8 = 0x2C; // , comma
-global QUOTATION_MARK  : u8 = 0x27; // ' single quote
+global QUOTATION_MARK  : u8 = 0x22; // " double quote
 global BACKSLASH       : u8 = 0x5C; // \ reverse solidus
 
 global TAB     : u8 = 0x09;
