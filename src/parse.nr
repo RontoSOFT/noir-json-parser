@@ -191,8 +191,8 @@ impl<N> ByteArrayParser for [u8; N]
 
                 if (string)
                 {
-                    string  = (byte != QUOTATION_MARK);
-                    string |= ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH) & !escaped);
+                    string = (byte != QUOTATION_MARK)
+                           | ((byte == QUOTATION_MARK) & (byte_prev == BACKSLASH) & !escaped);
 
                     let safe = !((byte == BACKSLASH) & escaped);
                     if      (safe & value)  { prop.value = prop.value.push_back(byte); done = !(string | array); }
@@ -201,20 +201,9 @@ impl<N> ByteArrayParser for [u8; N]
 
                     byte_prev = byte;
                 }
-                else if ((byte == BEGIN_OBJECT) | (byte == BEGIN_ARRAY))
+                else if (byte == BEGIN_OBJECT)
                 {
-                    OK = value;
-
-                    if (byte == BEGIN_ARRAY)
-                    {
-                        prop.value = prop.value.push_back(byte);
-                        array_value = array;
-
-                        arrays += 1;
-                        array = true;
-                        value_delimiter = false;
-                    }
-                    else if (object | array)
+                    if (object | array)
                     {
                         let mut index_local : Field = (index - 1); // will be overwritten to store child object's end index
                         let child_index : Field = (json.children.len() + child_index + 1);
@@ -243,31 +232,37 @@ impl<N> ByteArrayParser for [u8; N]
                         value_delimiter = false;
                     }
                 }
-                else if ((byte == END_OBJECT) | (byte == END_ARRAY))
+                else if (byte == END_OBJECT)
                 {
-                    if (byte == END_ARRAY)
+                    OK = object;
+
+                    object = false;
+                    done = true;
+
+                    if (child)
                     {
-                        OK = (!value_delimiter | array_value);
-
-                        prop.value = prop.value.push_back(byte);
-
-                        arrays -= 1;
-                        array = (arrays != 0);
-                        done = (OK & !array);
+                        *begin = index; // return child object's end index
+                        index = end;
                     }
-                    else
-                    {
-                        OK = object;
+                }
+                else if (byte == BEGIN_ARRAY)
+                {
+                    prop.value = prop.value.push_back(byte);
+                    array_value = array;
 
-                        object = false;
-                        done = true;
+                    arrays += 1;
+                    array = true;
+                    value_delimiter = false;
+                }
+                else if (byte == END_ARRAY)
+                {
+                    OK = (!value_delimiter | array_value);
 
-                        if (child)
-                        {
-                            *begin = index; // return child object's end index
-                            index = end;
-                        }
-                    }
+                    prop.value = prop.value.push_back(byte);
+
+                    arrays -= 1;
+                    array = (arrays != 0);
+                    done = (OK & !array);
                 }
                 else if (byte == QUOTATION_MARK)
                 {
@@ -324,8 +319,7 @@ impl<N> ByteArrayParser for [u8; N]
 
                     if ((byte - ZERO) < 10)
                     {
-                        OK  = (value & (!(literal | digit_0) | fraction | e_E));
-                        OK &= (!object | has_key);
+                        OK = (value & !literal & (!digit_0 | fraction | e_E));
 
                         number = true;
                         digit_0 |= ((byte == ZERO) & !digit_1_9);
@@ -345,14 +339,14 @@ impl<N> ByteArrayParser for [u8; N]
                     }
                     else if (byte == MINUS)
                     {
-                        OK = (!number | (e_E & !(e_minus | e_plus | e_digit)));
+                        OK = (!literal & (!number | (e_E & !(e_minus | e_plus | e_digit))));
 
                         number = true;
                         e_minus = e_E;
                     }
                     else if (byte == PLUS)
                     {
-                        OK = (e_E & !(e_plus | e_digit | e_minus));
+                        OK = (e_E & !(e_plus | e_minus | e_digit ));
                         e_plus = true;
                     }
                     else
@@ -367,15 +361,15 @@ impl<N> ByteArrayParser for [u8; N]
                 }
                 else
                 {
-                    OK = ((byte != 0x00) | (!array & (index == end)));
+                    OK = ((byte != 0x00) | (index == end));
                     done = (!array & (number | literal));
                 }
 
                 if (done)
                 {
-                    OK = !(number | literal)
-                       | ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
-                       | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false));
+                    OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
+                       | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false))
+                       | !(number | literal);
 
                     if (OK & value)
                     {
@@ -405,7 +399,7 @@ impl<N> ByteArrayParser for [u8; N]
             if (json.is_none())
             {
                 OK = ((digit_0 | digit_1_9) & (!fraction | fraction_digit) & (!e_E | e_digit))
-                   | (!number & ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false)))
+                   | ((literal_field == FIELD_true) | (literal_field == FIELD_null) | (literal_field == FIELD_false))
                    | !value;
 
                 if (OK) { json.doc = [prop]; }
