@@ -39,28 +39,26 @@ impl Property
     unconstrained
     fn print_index(self, index: Field)
     {
-        dep::std::println(f"key {index}");
+        dep::std::print("    \"");
         self.key.print();
-
-        dep::std::println("value\n{");
+        dep::std::print("\": ");
 
         let mut object = false;
         for byte in self.value
         {
             if (object & (byte != globals::END_OBJECT) & (byte != globals::BACKSLASH))
             {
-                dep::std::println(f"        {byte}");
+                dep::std::print(byte);
             }
             else
             {
-                let c = utils::chars[byte];
-                dep::std::println(f"    {c}");
+                dep::std::print(utils::chars[byte]);
 
                 object = (byte == globals::BEGIN_OBJECT);
             }
         }
 
-        dep::std::println("}");
+        dep::std::println("");
     }
 }
 
@@ -76,7 +74,12 @@ impl Extensions for Object
     pub fn is_empty(self) -> bool { if (self.len() == 1) { self[0].is_none() } else { false } }
 
     unconstrained
-    pub fn print(self) { for i in 0..self.len() { self[i].print_index(i); } }
+    pub fn print(self)
+    {
+        dep::std::println("{");
+        for i in 0..self.len() { self[i].print_index(i); }
+        dep::std::println("}");
+    }
 }
 
 impl Extensions for JSON
@@ -93,11 +96,14 @@ impl Extensions for JSON
     unconstrained
     pub fn print(self)
     {
+        dep::std::println("\ndoc");
         self.doc.print();
+        dep::std::println("");
 
         for i in 0..self.children.len()
         {
-            dep::std::println(f"-- child {i} --");
+            let i : u64 = i as u64;
+            dep::std::println(f"-- {{i}} --");
             self.children[i].print();
         }
     }

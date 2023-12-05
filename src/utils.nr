@@ -77,10 +77,5 @@ impl<SIZE> ByteArrayExtensions for [u8; SIZE]
     }
 
     unconstrained
-    pub fn print(self)
-    {
-        dep::std::println("{");
-        for byte in self { let c = chars[byte]; dep::std::println(f"    {c}"); }
-        dep::std::println("}");
-    }
+    pub fn print(self) { for byte in self { dep::std::print(chars[byte]); } }
 }
