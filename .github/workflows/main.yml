@@ -30,7 +30,7 @@ jobs:
           echo Downloading Nargo $version
 
           # url="https://github.com/noir-lang/noir/releases/download/v${version}/nargo-x86_64-unknown-linux-gnu.tar.gz"
-          url="https://github.com/noir-lang/noir/releases/download/nightly-2023-12-02/nargo-x86_64-unknown-linux-gnu.tar.gz"
+          url="https://github.com/noir-lang/noir/releases/download/nightly-2023-12-06/nargo-x86_64-unknown-linux-gnu.tar.gz"
           curl -L "$url" | tar -xz -C .
           chmod +x nargo
 
